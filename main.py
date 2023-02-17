@@ -71,6 +71,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QMenu, QMenuBar,
     QSizePolicy, QStatusBar, QTabWidget, QWidget,QDockWidget,QFileDialog,QTableWidgetItem,QHBoxLayout)
 from panels.timeofflight import TimeOfFlightPanel
 from panels.acquisitionpanel import AcquisitionPanel
+from SC_TDC import SC_TDC
 #
 
 # -----------------------------------------------------------------------------
@@ -90,7 +91,7 @@ QUEUE_ENDOFMEAS = 1
 #     elif eventtype == QUEUE_ENDOFMEAS:
 #         return 0
 
-class SC_TDC(QMainWindow,):
+class SC_TDC_viewer(QMainWindow,):
     clearNow = Signal()
     displayNow = Signal()
     settingsChanged = Signal()
@@ -98,19 +99,16 @@ class SC_TDC(QMainWindow,):
     resetToF = Signal()
 
     def __init__(self,parent=None):
-        super(SC_TDC, self).__init__(parent)
+        super(SC_TDC_viewer, self).__init__(parent)
         # self.setupUi(self)
         self.setupWindows()
-        
-        fake = True
-        if fake:
-            a=1
-        else:
-            # Initialize device
-            self.device = self.initializeDevice("C:\\Users\\attose1_VMI\\Documents\\Python_Scripts\\scTDC\\scTDC_Python_SDK_v1.3.0\\scTDC_Py\\Library\\")
-            # open a BUFFERED_DATA_CALLBACKS pipe
-            self.bufdatacb = BufDataCB5(self.device.lib, self.device.dev_desc)
-            self.bufdatacb.dataCallback = self.onData
+        TDC = SC_TDC("C:\\Users\\attose1_VMI\\Documents\\Python_Scripts\\scTDC\\scTDC_Python_SDK_v1.3.0\\scTDC_Py\\Library\\")
+        TDC.dataCallback = self.onData
+        # # Initialize device
+        # self.device = self.initializeDevice("C:\\Users\\attose1_VMI\\Documents\\Python_Scripts\\scTDC\\scTDC_Python_SDK_v1.3.0\\scTDC_Py\\Library\\")
+        # # open a BUFFERED_DATA_CALLBACKS pipe
+        # self.bufdatacb = BufDataCB5(self.device.lib, self.device.dev_desc)
+        # self.bufdatacb.dataCallback = self.onData
 
 
     def setupWindows(self):
