@@ -95,24 +95,23 @@ class SC_TDC_viewer(QMainWindow,):
     clearNow = Signal()
     displayNow = Signal()
     settingsChanged = Signal()
-    onToF = Signal(object)
-    resetToF = Signal()
+    onTof = Signal(object)
+    resetTof = Signal()
+    closeDevice_signal = Signal()
 
     def __init__(self,parent=None):
         super(SC_TDC_viewer, self).__init__(parent)
-        # self.setupUi(self)
+        # Initialize windows
         self.setupWindows()
-        TDC = SC_TDC("C:\\Users\\attose1_VMI\\Documents\\Python_Scripts\\scTDC\\scTDC_Python_SDK_v1.3.0\\scTDC_Py\\Library\\")
-        TDC.dataCallback = self.onData
-        # # Initialize device
-        # self.device = self.initializeDevice("C:\\Users\\attose1_VMI\\Documents\\Python_Scripts\\scTDC\\scTDC_Python_SDK_v1.3.0\\scTDC_Py\\Library\\")
-        # # open a BUFFERED_DATA_CALLBACKS pipe
-        # self.bufdatacb = BufDataCB5(self.device.lib, self.device.dev_desc)
-        # self.bufdatacb.dataCallback = self.onData
+        # Initialize device in a separate class
+        self.TDC = SC_TDC("C:\\Users\\attose1_VMI\\Documents\\Python_Scripts\\scTDC\\scTDC_Python_SDK_v1.3.0\\scTDC_Py\\Library\\")
+        self.TDC.dataCallback = self.onData
+        self.connectSignals()
+
 
 
     def setupWindows(self):
-        # ToF panel used for display
+        # Tof panel used for display
         self._tof_panel = TimeOfFlightPanel(self)
         self._dock_tof = QDockWidget('Time of Flight',self)
         self._dock_tof.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
@@ -126,65 +125,25 @@ class SC_TDC_viewer(QMainWindow,):
         self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_acq) 
 
     def connectSignals(self,):
-            self.displayNow.connect(self._tof_panel.displayToF)
-            self.onToF.connect(self._tof_panel.onEvent)
-            self.resetToF.connect(self._tof_panel.resetToF)
-            # self._acq_panel.start_acq_pushButton.clicked.connect(self.startAcquisition)
-
-    def initializeDevice(self,libpath=None):
-        import os
-        if libpath:
-            folder_init = os.getcwd()
-            os.chdir(libpath)
-        else:
-            print('No library path given')
-            return -1
-        device = scTDC.Device(autoinit=False)
-        # initialize TDC --- and check for error!
-        retcode, errmsg = device.initialize()
-        if retcode < 0:
-            print("error during init:", retcode, errmsg)
-            return -1
-        else:
-            print("successfully initialized")
-        os.chdir(folder_init)
-        return device        
-
-    # define a closure that checks return codes for errors and does clean up
-    def errorcheck(self,retcode):
-        if retcode < 0:
-            print(self.device.lib.sc_get_err_msg(retcode))
-            self.bufdatacb.close()
-            self.device.deinitialize()
-            return -1
-        else:
-            return 0        
+            # self.displayNow.connect(self._tof_panel.displayToF)
+            self.onTof.connect(self._tof_panel.onEvent)
+            self.resetTof.connect(self._tof_panel.resetTof)
+            self.closeDevice_signal.connect(self.TDC.closeDevice)
+            self._acq_panel.end_acq_pushButton.clicked.connect(self.TDC.stop_thread)
+            self._acq_panel.start_acq_pushButton.clicked.connect(self.TDC.start_thread)
 
     def closeDevice(self):
-        # clean up
-        self.bufdatacb.close() # closes the user callbacks pipe, method inherited from base class
-        self.device.deinitialize()
+        self.closeDevice_signal.emit()
 
 
-    def onData(self):
-        print(timeit.default_timer())
+    def onData(self,event_type,data):
+        # print(timeit.default_timer())
         #Measure continously
         while True:
-            time.sleep(1.0)
-            print(timeit.default_timer())
-        #     retcode = self.bufdatacb.start_measurement(EXPOSURE_MS)    
-        #     if self.errorcheck(retcode) < 0:
-        #         break
-        #     eventtype, data = self.bufdatacb.queue.get()  # waits until element available
-        # if eventtype == QUEUE_DATA:
-        #     self.onToF.emit(data)
-        #     # data_to_textfile.process_data(data)
-        # elif eventtype == QUEUE_ENDOFMEAS:
-        #     self.resetToF.emit()
-    
-        # start = timeit.default_timer()        
-        # start a first measurement
-
+            a = 1
+            break
+            # time.sleep(1.0)
+            # print(timeit.default_timer())            
     # # enter a scope where the text file is open
     # with DataToTextfile(OUTPUT_TEXTFILE_NAME) as data_to_textfile:
     #     # event loop
@@ -195,25 +154,6 @@ class SC_TDC_viewer(QMainWindow,):
     #             data_to_textfile.process_data(data)
     #         elif eventtype == QUEUE_ENDOFMEAS:
     #             data_to_textfile.write_measurement_separator()
-    #             meas_remaining -= 1
-    #             if meas_remaining > 0:
-    #                 retcode = bufdatacb.start_measurement(EXPOSURE_MS)
-    #                 if errorcheck(retcode) < 0:
-    #                     return -1
-    #             else:
-    #                 break
-    #         else: # unknown event
-    #             break # break out of the event loop
-
-    # end = timeit.default_timer()
-    # print("\ntime elapsed : ", end-start, "s")
-
-    # time.sleep(0.1)
-    # # clean up
-    # bufdatacb.close() # closes the user callbacks pipe, method inherited from base class
-    # device.deinitialize()
-
-    # return 0
 
 def main():
     import sys
@@ -222,7 +162,7 @@ def main():
     app = QApplication([])
 
     
-    config = SC_TDC()
+    config = SC_TDC_viewer()
     app.lastWindowClosed.connect(config.closeDevice)
     config.show()
     

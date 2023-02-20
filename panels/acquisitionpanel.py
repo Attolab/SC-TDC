@@ -107,31 +107,36 @@ class AcquisitionPanel(QWidget,Ui_Form):
         return current_directory
 
     def connectSignals(self):
-        self.start_acq_pushButton.clicked.connect(self.startAcqClicked)
-        self.end_acq_pushButton.clicked.connect(self.endAcqClicked)
+        # self.start_acq_pushButton.clicked.connect(self.startAcqClicked)
+        # self.end_acq_pushButton.clicked.connect(self.endAcqClicked)
         self.openPath_pushButton.clicked.connect(self.openPath)
         
     def openPath(self):
+        # current_dir = self.folderPath_lineEdit.text(directory)
+
         directory = QtGui.QFileDialog.getExistingDirectory(self, "Open Directory",
                                              "/home",
                                              QtGui.QFileDialog.ShowDirsOnly
                                              | QtGui.QFileDialog.DontResolveSymlinks)
+        if directory is not None:
+            self.folderPath_lineEdit.setText(directory)            
+            # self.folderPath_lineEdit.setText(current_dir)
 
-        self.folderPath_lineEdit.setText(directory)
+
     
     
-    def UpdatePosition(self,pos):
+    def updatePosition(self,pos):
         self.status_position.setText(f'{pos}')
 
 
-    def SavePositionArray(self,position_array):
+    def savePositionArray(self,position_array):
         self._stageDelays = position_array
 
 
-    def UpdateIndexing(self,position_array,index,steps):
-        self.status_position.setText(self.MakeFormatOuput(position_array[0], position_array[-1]))
-        self.status_image.setText(self.MakeFormatOuput(index[0],index[-1]))
-        self.status_steps.setText(self.MakeFormatOuput(steps[0],steps[-1]))
+    def updateIndexing(self,position_array,index,steps):
+        self.status_position.setText(self.makeFormatOuput(position_array[0], position_array[-1]))
+        self.status_image.setText(self.makeFormatOuput(index[0],index[-1]))
+        self.status_steps.setText(self.makeFormatOuput(steps[0],steps[-1]))
         acq_time = float(self.acq_time.text())
         
         # Estimate the length of the scan:
@@ -140,14 +145,14 @@ class AcquisitionPanel(QWidget,Ui_Form):
         scanLengthEstimate = acq_time*steps[-1] + totalStageMotion * 1.0/stageVelocity
         remainingStageMotion = np.sum(np.abs(np.diff(self._stageDelays[steps[0]:])))
         scanLengthRemaining = acq_time*(steps[-1] - steps[0]+1) + remainingStageMotion * 1.0/stageVelocity
-        h_remaining,m_remaining,s_remaining = self.MakeHoursMinutesSeconds(scanLengthRemaining)
-        h_total,m_total,s_total = self.MakeHoursMinutesSeconds(scanLengthEstimate)
+        h_remaining,m_remaining,s_remaining = self.makeHoursMinutesSeconds(scanLengthRemaining)
+        h_total,m_total,s_total = self.makeHoursMinutesSeconds(scanLengthEstimate)
         self.status_scanLength.setText(f"{h_remaining}h {m_remaining} m {s_remaining} s / {h_total}h {m_total} m {s_total} s")
 
     #Output for GUI
-    def MakeFormatOuput(self,input1,input2):
+    def makeFormatOuput(self,input1,input2):
         return f'{input1}/{input2}'    
-    def MakeHoursMinutesSeconds(self,seconds):
+    def makeHoursMinutesSeconds(self,seconds):
         m, s = divmod(seconds, 60)
         h, m = divmod(m, 60)
         s = int(round(s))
@@ -187,11 +192,11 @@ class AcquisitionPanel(QWidget,Ui_Form):
     def updateTimer(self):
         if self._in_acq:
             seconds = self._elapsed_time.elapsed()/1000
-            h,m,s = self.MakeHoursMinutesSeconds(seconds)
+            h,m,s = self.makeHoursMinutesSeconds(seconds)
             self.elapsed_time_s.display(int(round(s)))
             self.elapsed_time_m.display(int(round(m)))
             self.elapsed_time_h.display(h)
-    def MakeHoursMinutesSeconds(self,seconds):
+    def makeHoursMinutesSeconds(self,seconds):
             m, s = divmod(seconds, 60)
             h, m = divmod(m, 60)
             return h,m,s

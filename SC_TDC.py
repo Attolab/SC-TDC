@@ -82,7 +82,7 @@ class AcquisitionThread(threading.Thread):
 
     """
     def __init__(self, function, args=[], kwargs={}):
-        AcquisitionThread.__init__(self)
+        threading.Thread.__init__(self)
         self.function = function
         self.args = args
         self.kwargs = kwargs
@@ -92,9 +92,14 @@ class AcquisitionThread(threading.Thread):
         self.finished.set()
 
     def run(self):
+        repeats = 0
         while not self.finished.is_set():
+            print(repeats)
+            repeats += 1
+            print('launching acq')
             self.function(*self.args, **self.kwargs)
-        self.finished.set()
+            print('finishing acq')
+        # self.finished.set()
 
 
 class SC_TDC(object,):
@@ -102,15 +107,16 @@ class SC_TDC(object,):
     # _dataSignal = Signal(object)
 
     def __init__(self,parent=None,adress="C:\\Users\\attose1_VMI\\Documents\\Python_Scripts\\scTDC\\scTDC_Python_SDK_v1.3.0\\scTDC_Py\\Library\\"):
-        super(SC_TDC, self).__init__(parent)
+        # super(SC_TDC, self).__init__(parent)
         # self.setupUi(self)    
             # Initialize device
-        self.device = self.initializeDevice(adress)
+        self.device = self.initializeDevice(adress)        
         self.exposureTime = 100
         # open a BUFFERED_DATA_CALLBACKS pipe
         self.bufdatacb = BufDataCB5(self.device.lib, self.device.dev_desc)
         # self._event_callback=None
         self._data_thread = None
+        self.start_thread()
         # self._data_thread = threading.Thread(target=self.data_thread)
         # self._data_thread.start()
         # self.bufdatacb.dataCallback = self.onData
@@ -128,18 +134,22 @@ class SC_TDC(object,):
                 break       
             # self._dataSignal.emit()     
         # data_type,data = value
-        # self._event_callback(data_type,data)
+        self._event_callback(eventtype,data)
 
     def stop_thread(self,):    
+        print('Stopping thread:')
         if self._data_thread is not None:
             self._data_thread.cancel()
             self._data_thread = None
-
-    def launch_thread(self,exposureTime=100):    
+            print('Thread is stopped')
+        else:
+            print('No active thread to be stopped')
+    def start_thread(self,exposureTime=100):  
+        print('Starting thread:')  
         if self._data_thread is not None:
             self._data_thread.cancel()
             self._data_thread = None
-        self._data_thread = AcquisitionThread(self.getData(exposureTime),)
+        self._data_thread = AcquisitionThread(self.getData,(exposureTime,))
         self._data_thread.start()
 
     def initializeDevice(self,libpath=None):
@@ -190,6 +200,8 @@ class SC_TDC(object,):
         else:
             return 0        
     def closePipe(self):
+        if self._data_thread is not None:
+            self.stop_thread()
         if self.bufdatacb is not None:
             self.bufdatacb.close() # closes the user callbacks pipe, method inherited from base class
         self.bufdatacb = None           
@@ -266,13 +278,7 @@ def main():
     import sys
     import logging
     logging.basicConfig(level=logging.INFO,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    app = QApplication([])
-
     
     config = SC_TDC()
-    app.lastWindowClosed.connect(config.closeDevice)
-    config.show()
-    
-    app.exec_()
 if __name__=="__main__":
     main()
