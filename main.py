@@ -151,8 +151,6 @@ class SC_TDC_viewer(QMainWindow,):
     def closeDevice(self):
         self.closeDevice_signal.emit()
 
-
-
     def onExposureTimeeUpdate(self,value):
         logging.info('Bias Voltage changed to {} V'.format(value))
         self.TDC.exposureTime = value
@@ -175,8 +173,11 @@ class SC_TDC_viewer(QMainWindow,):
         if self._frame_time >=0 and (check_update-self._last_frame) > self._frame_time:
             self.clearNow.emit()
             self._last_frame = time.time()
-
-        self.onTof.emit(data)
+        if event_type == 0:
+            print('Data')
+            self.onTof.emit(data)
+        elif event_type == 1:
+            print('Measurement')
 
         if (check_update-self._last_update) > self._display_rate:            
             self.displayNow.emit()

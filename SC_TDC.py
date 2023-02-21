@@ -111,9 +111,10 @@ class SC_TDC(object,):
                 ,exposureTime=100):
         # super(SC_TDC, self).__init__(parent)
         # self.setupUi(self)    
+        self.libpath = adress+"tdc_gpx3.ini"
         # Initialize device
         try:
-            self.device = self.initializeDevice(adress)        
+            self.device = self.initializeDevice()        
             # open a BUFFERED_DATA_CALLBACKS pipe
             self.bufdatacb = BufDataCB5(self.device.lib, self.device.dev_desc)
         except:
@@ -135,8 +136,8 @@ class SC_TDC(object,):
             self.errorcheck(retcode) # Checking error
             while True:
                 eventtype, data = self.bufdatacb.queue.get()  # waits until element available
-                print(f'eventtype = {eventtype}')
-                print(f'data = {data}')
+                # print(f'eventtype = {eventtype}')
+                # print(f'data = {data}')
                 if data is None:
                     break       
         else:
@@ -165,15 +166,16 @@ class SC_TDC(object,):
         print('Thread is started')  
 
 
-    def initializeDevice(self,libpath=None):
+    def initializeDevice(self,):        
         import os
-        if libpath:
+        folder,filename_withext = os.path.split(self.libpath)
+        if self.libpath:
             folder_init = os.getcwd()
-            os.chdir(libpath)
+            os.chdir(folder)
         else:
             print('No library path given')
             return -1
-        device = scTDC.Device(autoinit=False)
+        device = scTDC.Device(inifilepath=self.libpath,autoinit=False)
         # initialize TDC --- and check for error!
         retcode, errmsg = device.initialize()
         if retcode < 0:
@@ -237,55 +239,6 @@ class SC_TDC(object,):
         self.initializeDevice()
         self.openPipe()
         # clean up
-
-    def onData(self):
-        print(timeit.default_timer())
-        #Measure continously
-        while True:
-            time.sleep(1.0)
-            print(timeit.default_timer())
-        #     retcode = self.bufdatacb.start_measurement(EXPOSURE_MS)    
-        #     if self.errorcheck(retcode) < 0:
-        #         break
-        #     eventtype, data = self.bufdatacb.queue.get()  # waits until element available
-        # if eventtype == QUEUE_DATA:
-        #     self.onToF.emit(data)
-        #     # data_to_textfile.process_data(data)
-        # elif eventtype == QUEUE_ENDOFMEAS:
-        #     self.resetToF.emit()
-    
-        # start = timeit.default_timer()        
-        # start a first measurement
-
-    # # enter a scope where the text file is open
-    # with DataToTextfile(OUTPUT_TEXTFILE_NAME) as data_to_textfile:
-    #     # event loop
-    #     meas_remaining = NR_OF_MEASUREMENTS
-    #     while True:
-    #         eventtype, data = bufdatacb.queue.get()  # waits until element available
-    #         if eventtype == QUEUE_DATA:
-    #             data_to_textfile.process_data(data)
-    #         elif eventtype == QUEUE_ENDOFMEAS:
-    #             data_to_textfile.write_measurement_separator()
-    #             meas_remaining -= 1
-    #             if meas_remaining > 0:
-    #                 retcode = bufdatacb.start_measurement(EXPOSURE_MS)
-    #                 if errorcheck(retcode) < 0:
-    #                     return -1
-    #             else:
-    #                 break
-    #         else: # unknown event
-    #             break # break out of the event loop
-
-    # end = timeit.default_timer()
-    # print("\ntime elapsed : ", end-start, "s")
-
-    # time.sleep(0.1)
-    # # clean up
-    # bufdatacb.close() # closes the user callbacks pipe, method inherited from base class
-    # device.deinitialize()
-
-    # return 0
 
 def main():
     import sys
