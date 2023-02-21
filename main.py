@@ -71,8 +71,9 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QMenu, QMenuBar,
     QSizePolicy, QStatusBar, QTabWidget, QWidget,QDockWidget,QFileDialog,QTableWidgetItem,QHBoxLayout)
 from panels.timeofflight import TimeOfFlightPanel
 from panels.acquisitionpanel import AcquisitionPanel
+from panels.viewerconfig import ViewerConfig
 from SC_TDC import SC_TDC
-#
+import logging
 
 # -----------------------------------------------------------------------------
 # example 4 of deriving from buffered_data_callbacks_pipe
@@ -103,14 +104,24 @@ class SC_TDC_viewer(QMainWindow,):
         super(SC_TDC_viewer, self).__init__(parent)
         # Initialize windows
         self.setupWindows()
+        self.start_TDC()
+        self.connectSignals()
+        self._display_rate = 1/5
+        self._last_update = 0
+        self._last_frame = 0.0
+        self._frame_time = -1.0
+
+    def start_TDC(self):
         # Initialize device in a separate class
         self.TDC = SC_TDC("C:\\Users\\attose1_VMI\\Documents\\Python_Scripts\\scTDC\\scTDC_Python_SDK_v1.3.0\\scTDC_Py\\Library\\")
         self.TDC.dataCallback = self.onData
-        self.connectSignals()
-
-
-
     def setupWindows(self):
+        # Viewer configuration
+        self._config_panel = ViewerConfig(self)
+        self._dock_config = QDockWidget('Acquisition',self)
+        self._dock_config.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
+        self._dock_config.setWidget(self._config_panel)
+        self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_config)         
         # Tof panel used for display
         self._tof_panel = TimeOfFlightPanel(self)
         self._dock_tof = QDockWidget('Time of Flight',self)
@@ -125,23 +136,53 @@ class SC_TDC_viewer(QMainWindow,):
         self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_acq) 
 
     def connectSignals(self,):
-            # self.displayNow.connect(self._tof_panel.displayToF)
-            self.onTof.connect(self._tof_panel.onEvent)
-            self.resetTof.connect(self._tof_panel.resetTof)
-            self.closeDevice_signal.connect(self.TDC.closeDevice)
-            self._acq_panel.end_acq_pushButton.clicked.connect(self.TDC.stop_thread)
-            self._acq_panel.start_acq_pushButton.clicked.connect(self.TDC.start_thread)
+        self._config_panel.updateRateChange.connect(self.onDisplayUpdate)
+        self._config_panel.frameTimeChange.connect(self.onFrameTimeUpdate)        
+        self._config_panel.resetPlots.connect(self.clearNow.emit)
+
+        self.clearNow.connect(self._tof_panel.clearTof)
+        self.onTof.connect(self._tof_panel.onEvent)
+        self.displayNow.connect(self._tof_panel.displayTof)
+
+        self.closeDevice_signal.connect(self.TDC.closeDevice)
+        self._acq_panel.end_acq_pushButton.clicked.connect(self.TDC.stop_thread)
+        self._acq_panel.start_acq_pushButton.clicked.connect(self.TDC.start_thread)
 
     def closeDevice(self):
         self.closeDevice_signal.emit()
 
 
+
+    def onExposureTimeeUpdate(self,value):
+        logging.info('Bias Voltage changed to {} V'.format(value))
+        self.TDC.exposureTime = value
+
+    def onDisplayUpdate(self,value):
+        logging.info('Display rate changed to {} s'.format(value))
+        self._display_rate = value
+
+    def onFrameTimeUpdate(self,value):
+        logging.info('Frame time set to {} s'.format(value))
+        self._frame_time = value
+
     def onData(self,event_type,data):
+        # print(event_type)
+        # print(data)
         # print(timeit.default_timer())
         #Measure continously
-        while True:
-            a = 1
-            break
+        check_update = time.time()
+        #Refresh rate
+        if self._frame_time >=0 and (check_update-self._last_frame) > self._frame_time:
+            self.clearNow.emit()
+            self._last_frame = time.time()
+
+        self.onTof.emit(data)
+
+        if (check_update-self._last_update) > self._display_rate:            
+            self.displayNow.emit()
+            self._last_update = time.time()      
+
+
             # time.sleep(1.0)
             # print(timeit.default_timer())            
     # # enter a scope where the text file is open

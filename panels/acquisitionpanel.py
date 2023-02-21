@@ -85,18 +85,20 @@ class AcquisitionPanel(QWidget,Ui_Form):
         self._stageDelays = np.asarray([])
         self._convertDatathread = None
         self.connectSignals()
-        self.InitializeDate()
-        self.folderPath_lineEdit.setText(self.InitializeDate())
+        self.initializeDate()
+        self.folderPath_lineEdit.setText(self.initializeDate())
 
         self._in_acq = False
         self._repeating_thread = None
         self._stop_all_acquisitions = False
-        self._elapsed_time_thread = QtCore.QTimer()
-        self._elapsed_time = QtCore.QElapsedTimer()
-        self._elapsed_time_thread.timeout.connect(self.updateTimer)
-        self._elapsed_time_thread.start(1000)        
 
-    def InitializeDate(self):
+        # Timer thread
+        # self._elapsed_time_thread = QtCore.QTimer()
+        # self._elapsed_time = QtCore.QElapsedTimer()
+        # self._elapsed_time_thread.timeout.connect(self.updateTimer)
+        # self._elapsed_time_thread.start(1000)        
+
+    def initializeDate(self):
         today = date.today()
         # year = datetime.year()
         folder_init = os.getcwd()

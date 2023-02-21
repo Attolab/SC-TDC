@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'timeofflightpanel.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.4.0
+## Created by: Qt User Interface Compiler version 6.2.4
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -117,29 +117,22 @@ class Ui_Form(object):
 
         self.verticalLayout_3.addLayout(self.horizontalLayout_3)
 
-        self.horizontalLayout_7 = QHBoxLayout()
-        self.horizontalLayout_7.setObjectName(u"horizontalLayout_7")
-        self.label_6 = QLabel(self.groupBox_2)
-        self.label_6.setObjectName(u"label_6")
-        sizePolicy1.setHeightForWidth(self.label_6.sizePolicy().hasHeightForWidth())
-        self.label_6.setSizePolicy(sizePolicy1)
+        self.horizontalLayout_4 = QHBoxLayout()
+        self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
+        self.label_5 = QLabel(self.groupBox_2)
+        self.label_5.setObjectName(u"label_5")
+        sizePolicy1.setHeightForWidth(self.label_5.sizePolicy().hasHeightForWidth())
+        self.label_5.setSizePolicy(sizePolicy1)
 
-        self.horizontalLayout_7.addWidget(self.label_6)
+        self.horizontalLayout_4.addWidget(self.label_5)
 
-        self.bin_size_3 = QLineEdit(self.groupBox_2)
-        self.bin_size_3.setObjectName(u"bin_size_3")
+        self.max_queue = QLineEdit(self.groupBox_2)
+        self.max_queue.setObjectName(u"max_queue")
 
-        self.horizontalLayout_7.addWidget(self.bin_size_3)
-
-        self.label_7 = QLabel(self.groupBox_2)
-        self.label_7.setObjectName(u"label_7")
-        sizePolicy1.setHeightForWidth(self.label_7.sizePolicy().hasHeightForWidth())
-        self.label_7.setSizePolicy(sizePolicy1)
-
-        self.horizontalLayout_7.addWidget(self.label_7)
+        self.horizontalLayout_4.addWidget(self.max_queue)
 
 
-        self.verticalLayout_3.addLayout(self.horizontalLayout_7)
+        self.verticalLayout_3.addLayout(self.horizontalLayout_4)
 
 
         self.verticalLayout_4.addWidget(self.groupBox_2)
@@ -169,9 +162,8 @@ class Ui_Form(object):
         self.label_2.setText(QCoreApplication.translate("Form", u"-", None))
         self.label_4.setText(QCoreApplication.translate("Form", u"us", None))
         self.label_3.setText(QCoreApplication.translate("Form", u"Number of bins", None))
-        self.label_6.setText(QCoreApplication.translate("Form", u"Refresh rate", None))
-        self.bin_size_3.setText(QCoreApplication.translate("Form", u"1000", None))
-        self.label_7.setText(QCoreApplication.translate("Form", u"ms", None))
+        self.label_5.setText(QCoreApplication.translate("Form", u"Max queue", None))
+        self.max_queue.setText("")
         self.update_config.setText(QCoreApplication.translate("Form", u"Update", None))
     # retranslateUi
 

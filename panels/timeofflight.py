@@ -46,10 +46,8 @@ class TimeOfFlightPanel(QWidget,Ui_Form):
 
         # Set up the user interface from Designer.
         self.setupUi(self)
-
         self._histo_x = None
         self._histo_y = None
-        self._yield = None
         self._tof_data = pg.PlotDataItem()
         self.tof_view.addItem(self._tof_data)
         self.tof_view.setLabel('bottom',text='Time of Flight',units='s')
@@ -58,32 +56,42 @@ class TimeOfFlightPanel(QWidget,Ui_Form):
         self.yield_view.addItem(self._yield_data)
         self.yield_view.setLabel('bottom',text='Measurement')
         self.yield_view.setLabel('left',text='Hits')
-        self._blob_tof_mode = False
 
-        maxlength=1000
-        self._counts_trend_y = deque(maxlen=maxlength)#np.ndarray(shape=(400,),dtype=np.float)
-        self._counts_trend_x = deque(maxlen=maxlength)        
+        self._tof_start = 0.0
+        self._tof_end = 1000.0
+        self._tof_bin = 10000
+        self._maxqueue = 1000
+        self.makeBlobTrendQueue()
         self.setupTofConfig()
         self.connectSignals()
 
-        
+    def makeBlobTrendQueue(self,):
+        self._counts_trend = deque(maxlen=self._maxqueue) 
+        self._counts_trend_trigger = deque(maxlen=self._maxqueue)        
+
     def connectSignals(self):
         self.update_config.clicked.connect(self.onUpdateTofConfig)
-    def clearTof(self):
-        self._histo_x = None
-        self._histo_y = None
-        self._counts_trend_x = None
-        self._counts_trend_y = None
-    def resetTof(self):
-        self._histo_x = None
-        self._histo_y = None
+        self.event_start.returnPressed.connect(self.onUpdateTofConfig)
+        self.event_end.returnPressed.connect(self.onUpdateTofConfig)
+        self.bin_size.returnPressed.connect(self.onUpdateTofConfig)
+        self.max_queue.returnPressed.connect(self.onUpdateTofConfig)
 
+    def clearTof(self):
+        # Reset both Tof and Blobs
+        self.refreshTof()
+        self.makeBlobTrendQueue()
+
+    def refreshTof(self):
+        # Reset Tof only
+        self._histo_x = None
+        self._histo_y = None
 
     def onUpdateTofConfig(self):
         try:
             start = float(self.event_start.text())*1e-6
             end = float(self.event_end.text())*1E-6
             binning = int(self.bin_size.text())
+            maxqueue = int(self.max_queue.text())
         except Exception as e:
             print(str(e))
             traceback.print_exc()
@@ -99,46 +107,47 @@ class TimeOfFlightPanel(QWidget,Ui_Form):
             self._tof_end = end
 
         self._tof_bin = binning
+        self._maxqueue = maxqueue
         self.clearTof()
 
                    
-    def _updateTof(self,tof):
+    def _updateTof(self,trigger,tof):
         y,x = np.histogram(tof,np.linspace(self._tof_start,self._tof_end,self._tof_bin,dtype=np.float))
+        total_triggers = (trigger.max()-trigger.min())+1
+        uniq_triggers = np.unique(trigger)
+        mean = np.sum(y)/total_triggers
         if self._histo_x is None:
             self._histo_x = x
             self._histo_y = y
-            self._counts_trend_y = np.sum(y)
+            self.updateTrend(0,mean)
         else:
             self._histo_y += y
-            self._yield_data.appendData(np.sum(y))
+            # print(self._counts_trend_trigger[-1]+1)
+            self.updateTrend(self._counts_trend_trigger[-1]+1,mean)
 
 
     def updateTrend(self,trigger,avg_blobs):
-        self._counts_trend_x.append(trigger)
-        self._counts_trend_y.append(avg_blobs)
-            # self._yield_data.appendData(np.sum(y))
+        self._counts_trend.append(avg_blobs)
+        self._counts_trend_trigger.append(trigger)
 
-    def displayTof(self):
-        self._tof_data.setData(x=self._histo_x,y=self._histo_y, stepMode=True, fillLevel=0, brush=(0,0,255,150))
-        self._yield_data.setData(x=self._counts_trend_x,y=self._counts_trend_y, stepMode=True, fillLevel=0, brush=(0,0,255,150))
-
-
+    def displayTof(self):       
+        self._tof_data.setData(x=self._histo_x,y=self._histo_y, stepMode="center", fillLevel=0, brush=(0,0,255,150))
+        self._yield_data.setData(x=self._counts_trend_trigger,y=self._counts_trend, fillLevel=None, brush=(0,0,255,150))
 
     def onEvent(self,event):
-        tof = event[3]
-        self._updateTof(tof)
+        counter,tof = event
+        self._updateTof(counter,tof)
 
     def setupTofConfig(self):
         self.event_start.setValidator(QtGui.QDoubleValidator(self))
         self.event_end.setValidator(QtGui.QDoubleValidator(self))
         self.bin_size.setValidator(QtGui.QIntValidator(self))
-        self.event_start.setText(str(0.0))
-        self.event_end.setText(str(100.0))
-        self.bin_size.setText(str(1000))
-
-        self._tof_start = 0.0
-        self._tof_end = 100.0
-        self._tof_bin = 1000
+        self.max_queue.setValidator(QtGui.QIntValidator(self))        
+        self.event_start.setText(str(self._tof_start))
+        self.event_end.setText(str(self._tof_end))
+        self.max_queue.setText(str(self._maxqueue ))
+        self.bin_size.setText(str(self._tof_bin))
+        self.onUpdateTofConfig()
 
 def main():
     import sys
