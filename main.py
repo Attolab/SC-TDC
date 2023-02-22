@@ -95,6 +95,7 @@ QUEUE_ENDOFMEAS = 1
 class SC_TDC_viewer(QMainWindow,):
     clearNow = Signal()
     displayNow = Signal()
+    refreshNow = Signal()
     settingsChanged = Signal()
     onTof = Signal(object)
     resetTof = Signal()
@@ -140,7 +141,10 @@ class SC_TDC_viewer(QMainWindow,):
         self._config_panel.frameTimeChange.connect(self.onFrameTimeUpdate)        
         self._config_panel.resetPlots.connect(self.clearNow.emit)
 
+
         self.clearNow.connect(self._tof_panel.clearTof)
+        self.refreshNow.connect(self._tof_panel.refreshTof)
+
         self.onTof.connect(self._tof_panel.onEvent)
         self.displayNow.connect(self._tof_panel.displayTof)
 
@@ -151,7 +155,7 @@ class SC_TDC_viewer(QMainWindow,):
     def closeDevice(self):
         self.closeDevice_signal.emit()
 
-    def onExposureTimeeUpdate(self,value):
+    def onExposureTimeUpdate(self,value):
         logging.info('Bias Voltage changed to {} V'.format(value))
         self.TDC.exposureTime = value
 
@@ -171,7 +175,7 @@ class SC_TDC_viewer(QMainWindow,):
         check_update = time.time()
         #Refresh rate
         if self._frame_time >=0 and (check_update-self._last_frame) > self._frame_time:
-            self.clearNow.emit()
+            self.refreshNow.emit()
             self._last_frame = time.time()
         if event_type == 0:
             print('Data')

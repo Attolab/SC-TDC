@@ -114,21 +114,25 @@ class TimeOfFlightPanel(QWidget,Ui_Form):
     def _updateTof(self,trigger,tof):
         y,x = np.histogram(tof,np.linspace(self._tof_start,self._tof_end,self._tof_bin,dtype=np.float))
         total_triggers = (trigger.max()-trigger.min())+1
-        uniq_triggers = np.unique(trigger)
+        # uniq_triggers = np.unique(trigger)
         mean = np.sum(y)/total_triggers
         if self._histo_x is None:
             self._histo_x = x
             self._histo_y = y
-            self.updateTrend(0,mean)
         else:
             self._histo_y += y
-            # print(self._counts_trend_trigger[-1]+1)
-            self.updateTrend(self._counts_trend_trigger[-1]+1,mean)
-
+        if self._counts_trend_trigger:        
+            next_index = self._counts_trend_trigger[-1]+1
+        else:
+            next_index = 0
+        self.updateTrend(next_index,mean)
 
     def updateTrend(self,trigger,avg_blobs):
         self._counts_trend.append(avg_blobs)
+        # if len(self._counts_trend_trigger)>0:
         self._counts_trend_trigger.append(trigger)
+        # else:
+            # self.updateTrend(0,mean)
 
     def displayTof(self):       
         self._tof_data.setData(x=self._histo_x,y=self._histo_y, stepMode="center", fillLevel=0, brush=(0,0,255,150))
