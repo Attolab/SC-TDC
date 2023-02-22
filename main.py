@@ -168,7 +168,6 @@ class SC_TDC_viewer(QMainWindow,):
         self._frame_time = value
 
     def onData(self,event_type,data):
-        # print(event_type)
         # print(data)
         # print(timeit.default_timer())
         #Measure continously
@@ -178,10 +177,10 @@ class SC_TDC_viewer(QMainWindow,):
             self.refreshNow.emit()
             self._last_frame = time.time()
         if event_type == 0:
-            print('Data')
+            # print('Data')            
             self.onTof.emit(data)
-        elif event_type == 1:
-            print('Measurement')
+        # elif event_type == 1:
+        #     print('Measurement')
 
         if (check_update-self._last_update) > self._display_rate:            
             self.displayNow.emit()

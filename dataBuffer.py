@@ -26,8 +26,8 @@ class BufDataCB5(scTDC.buffered_data_callbacks_pipe):
         # insert numpy arrays using the copy method of the source array
         dcopy = {}
         for k in d.keys():
-            print(f'key:{k}')
-            print(f'data:{d[k]}')
+            # print(f'key:{k}')
+            # print(f'data:{d[k]}')
             if isinstance(d[k], np.ndarray):
                 dcopy[k] = d[k].copy()
             else:

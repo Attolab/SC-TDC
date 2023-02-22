@@ -95,7 +95,7 @@ class AcquisitionThread(threading.Thread):
     def run(self):
         repeats = 0
         while not self.finished.is_set():
-            print(repeats)
+            # print(repeats)
             repeats += 1
             # print('launching acq')
             self.function(*self.args, **self.kwargs)
@@ -138,6 +138,7 @@ class SC_TDC(object,):
                 eventtype, data = self.bufdatacb.queue.get()  # waits until element available
                 # print(f'eventtype = {eventtype}')
                 # print(f'data = {data}')
+                self._event_callback(eventtype,data)
                 if data is None:
                     break       
         else:

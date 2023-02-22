@@ -96,7 +96,6 @@ class TimeOfFlightPanel(QWidget,Ui_Form):
             print(str(e))
             traceback.print_exc()
             return
-
         if start > end:
             self._tof_start = end
             self._tof_end = start
@@ -112,10 +111,8 @@ class TimeOfFlightPanel(QWidget,Ui_Form):
 
                    
     def _updateTof(self,trigger,tof):
-        y,x = np.histogram(tof,np.linspace(self._tof_start,self._tof_end,self._tof_bin,dtype=np.float))
-        total_triggers = (trigger.max()-trigger.min())+1
-        # uniq_triggers = np.unique(trigger)
-        mean = np.sum(y)/total_triggers
+        y,x = np.histogram(tof,np.linspace(self._tof_start,self._tof_end,self._tof_bin,dtype=np.float))        
+        mean = np.sum(y)/len(trigger)
         if self._histo_x is None:
             self._histo_x = x
             self._histo_y = y
@@ -129,17 +126,16 @@ class TimeOfFlightPanel(QWidget,Ui_Form):
 
     def updateTrend(self,trigger,avg_blobs):
         self._counts_trend.append(avg_blobs)
-        # if len(self._counts_trend_trigger)>0:
         self._counts_trend_trigger.append(trigger)
-        # else:
-            # self.updateTrend(0,mean)
+
 
     def displayTof(self):       
         self._tof_data.setData(x=self._histo_x,y=self._histo_y, stepMode="center", fillLevel=0, brush=(0,0,255,150))
         self._yield_data.setData(x=self._counts_trend_trigger,y=self._counts_trend, fillLevel=None, brush=(0,0,255,150))
 
     def onEvent(self,event):
-        counter,tof = event
+        tof = event['time']*1e-9
+        counter = event['ms_indices']-event['ms_indices'][0]
         self._updateTof(counter,tof)
 
     def setupTofConfig(self):
