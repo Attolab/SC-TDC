@@ -63,7 +63,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="exposureTime_lineEdit">
+      <widget class="QLineEdit" name="acquisitionTime_lineEdit">
        <property name="text">
         <string>10</string>
        </property>

@@ -58,6 +58,7 @@ class ViewerConfig(QWidget,Ui_Form):
 
     def connectSignals(self):
         self.display_rate.valueChanged.connect(self.displayRateChange)
+        self.time_multi.currentIndexChanged.connect(self.frameTimeChanged)        
         self.frame_time.returnPressed.connect(self.frameTimeChanged)
         self.reset_plots.clicked.connect(self.resetPlots.emit)
 

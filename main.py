@@ -72,6 +72,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QMenu, QMenuBar,
 from panels.timeofflight import TimeOfFlightPanel
 from panels.acquisitionpanel import AcquisitionPanel
 from panels.viewerconfig import ViewerConfig
+from panels.TDCconfig import TDCConfig
 from SC_TDC import SC_TDC
 import logging
 
@@ -114,15 +115,24 @@ class SC_TDC_viewer(QMainWindow,):
 
     def start_TDC(self):
         # Initialize device in a separate class
-        self.TDC = SC_TDC("C:\\Users\\attose1_VMI\\Documents\\Python_Scripts\\scTDC\\scTDC_Python_SDK_v1.3.0\\scTDC_Py\\Library\\")
+        self.TDC = SC_TDC(adress="C:\\Users\\attose1_VMI\\Documents\\Python_Scripts\\scTDC\\scTDC_Python_SDK_v1.3.0\\scTDC_Py\\Library\\",
+        filename="tdc_gpx3.ini",exposureTime=100)
         self.TDC.dataCallback = self.onData
+
+        
     def setupWindows(self):
+        # TDC configuration
+        self._TDC_config_panel = TDCConfig(self)
+        self._dock_TDC_config = QDockWidget('TDC configuration',self)
+        self._dock_TDC_config.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
+        self._dock_TDC_config.setWidget(self._TDC_config_panel)
+        self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_TDC_config)         
         # Viewer configuration
-        self._config_panel = ViewerConfig(self)
-        self._dock_config = QDockWidget('Acquisition',self)
-        self._dock_config.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
-        self._dock_config.setWidget(self._config_panel)
-        self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_config)         
+        self._viewer_config_panel = ViewerConfig(self)
+        self._dock_viewer_config = QDockWidget('Viewer configuration',self)
+        self._dock_viewer_config.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
+        self._dock_viewer_config.setWidget(self._viewer_config_panel)
+        self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_viewer_config)         
         # Tof panel used for display
         self._tof_panel = TimeOfFlightPanel(self)
         self._dock_tof = QDockWidget('Time of Flight',self)
@@ -137,26 +147,43 @@ class SC_TDC_viewer(QMainWindow,):
         self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_acq) 
 
     def connectSignals(self,):
-        self._config_panel.updateRateChange.connect(self.onDisplayUpdate)
-        self._config_panel.frameTimeChange.connect(self.onFrameTimeUpdate)        
-        self._config_panel.resetPlots.connect(self.clearNow.emit)
+        self._TDC_config_panel.startThreadSignal.connect(self.TDC.start_thread)
+        self._TDC_config_panel.endThreadSignal.connect(self.TDC.stop_thread)
+        self._TDC_config_panel.connectSignal.connect(self.TDC.connectDevice)
+        self._TDC_config_panel.disconnectSignal.connect(self.TDC.disconnectDevice)
+        self._TDC_config_panel.updateExposureTimeChange.connect(self.onExposureTimeUpdate)
+        self._TDC_config_panel.updateLibPathChange.connect(self.onLibPathChangeUpdate)
+
+        self.TDC.isDeviceInitialized_Signal.connect(self._TDC_config_panel.isDeviceInitialized)
+
+
+        self._viewer_config_panel.updateRateChange.connect(self.onDisplayUpdate)
+        self._viewer_config_panel.frameTimeChange.connect(self.onFrameTimeUpdate)        
+        self._viewer_config_panel.resetPlots.connect(self.clearNow.emit)
 
 
         self.clearNow.connect(self._tof_panel.clearTof)
         self.refreshNow.connect(self._tof_panel.refreshTof)
 
         self.onTof.connect(self._tof_panel.onEvent)
+        self.onTof.connect(self._acq_panel.fileSaver.onTof)
+
         self.displayNow.connect(self._tof_panel.displayTof)
 
         self.closeDevice_signal.connect(self.TDC.closeDevice)
-        self._acq_panel.end_acq_pushButton.clicked.connect(self.TDC.stop_thread)
-        self._acq_panel.start_acq_pushButton.clicked.connect(self.TDC.start_thread)
+
+        # self._acq_panel.end_acq_pushButton.clicked.connect(self.TDC.stop_thread)
+        # self._acq_panel.start_acq_pushButton.clicked.connect(self.TDC.start_thread)
 
     def closeDevice(self):
         self.closeDevice_signal.emit()
 
+    def onLibPathChangeUpdate(self,value):
+        logging.info('Library path changed to {}'.format(value))
+        self.TDC.libPath = value
+
     def onExposureTimeUpdate(self,value):
-        logging.info('Bias Voltage changed to {} V'.format(value))
+        logging.info('Exposure Time changed to {} ms'.format(value))
         self.TDC.exposureTime = value
 
     def onDisplayUpdate(self,value):
@@ -179,6 +206,7 @@ class SC_TDC_viewer(QMainWindow,):
         if event_type == 0:
             # print('Data')            
             self.onTof.emit(data)
+
         # elif event_type == 1:
         #     print('Measurement')
 

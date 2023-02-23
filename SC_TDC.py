@@ -60,7 +60,7 @@ from dataBuffer import BufDataCB5
 from DataToFile import DataToTextfile
 from ast import Param
 import threading
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal,QObject
 import numpy as np
 #
 
@@ -103,20 +103,21 @@ class AcquisitionThread(threading.Thread):
         # self.finished.set()
 
 
-class SC_TDC(object,):
-    # clearNow = Signal()
-    # _dataSignal = Signal(object)
+class SC_TDC(QObject,):
+    isDeviceInitialized_Signal = Signal(bool)
 
     def __init__(self,parent=None,adress="C:\\Users\\attose1_VMI\\Documents\\Python_Scripts\\scTDC\\scTDC_Python_SDK_v1.3.0\\scTDC_Py\\Library\\"
-                ,exposureTime=100):
+                ,filename="tdc_gpx3.ini",exposureTime=100):
+        QObject.__init__(self)
         # super(SC_TDC, self).__init__(parent)
         # self.setupUi(self)    
-        self.libpath = adress+"tdc_gpx3.ini"
+        self.libPath = adress+filename
         # Initialize device
         try:
-            self.device = self.initializeDevice()        
+            self.initializeDevice()        
             # open a BUFFERED_DATA_CALLBACKS pipe
-            self.bufdatacb = BufDataCB5(self.device.lib, self.device.dev_desc)
+            if self.device is not None:
+                self.openPipe()
         except:
             self.device = None
             self.bufdatacb = None
@@ -143,11 +144,18 @@ class SC_TDC(object,):
                     break       
         else:
             time.sleep(exposureTime*1e-3)
-            L = 1000
-            eventtype,data = (0,(np.arange(L),np.random.rand(L)))
-            # self._dataSignal.emit()     
-        # data_type,data = value
-        self._event_callback(eventtype,data)
+            events = np.random.poisson(5, exposureTime)
+            ms_indices = np.cumsum(events)
+            counts = np.zeros((np.sum(events),))
+            counter = 0
+            for event in events:
+                counts[counter:counter+event] = np.random.rand(event)
+                counter += event
+            eventtype=0
+            data = {'time': counts*1e6,'ms_indices':ms_indices}            
+            # eventtype,data = (0,(np.arange(L),np.random.rand(L)))
+            self._event_callback(eventtype,data)
+
 
     def stop_thread(self,):    
         print('Stopping thread:')
@@ -164,29 +172,59 @@ class SC_TDC(object,):
             self._data_thread = None
         self._data_thread = AcquisitionThread(self.getData,(self.exposureTime,))
         self._data_thread.start()
-        print('Thread is started')  
+        print('Thread is started') 
 
 
-    def initializeDevice(self,):        
-        import os
-        folder,filename_withext = os.path.split(self.libpath)
-        if self.libpath:
-            folder_init = os.getcwd()
-            os.chdir(folder)
+    def connectDevice(self,):
+        error = self.initializeDevice()
+        if not error:
+            self.openPipe()        
+            self.isDeviceInitialized_Signal.emit(True)
+            print('Connected')
+    def disconnectDevice(self,):
+        self.closePipe()
+        error = self.deinitializeDevice()
+        if not error:
+            print('Disconnected')
+            self.isDeviceInitialized_Signal.emit(False)
+
+    def deinitializeDevice(self,):
+        if self.device is not None:
+            self.closePipe()
+            retcode,errmsg = self.device.deinitialize()
+            if retcode < 0:
+                print("error during deinit:", retcode, errmsg)
+                return -1
+            else:
+                print("successfully deinitialized")
+                self.device = None
+                return 0
+
+    
+    def initializeDevice(self,):
+        if self.device is None:        
+            import os
+            folder,filename_withext = os.path.split(self.libPath)
+            if self.libPath:
+                folder_init = os.getcwd()                
+                os.chdir(folder)
+            else:
+                print('No library path given')
+                return -1
+            device = scTDC.Device(inifilepath=self.libPath,autoinit=False)
+            # initialize TDC --- and check for error!
+            retcode, errmsg = device.initialize()
+            if retcode < 0:
+                print("error during init:", retcode, errmsg)
+                return -1
+            else:
+                print("successfully initialized")
+            os.chdir(folder_init)
+            self.device=device    
+            return 0
         else:
-            print('No library path given')
+            print('Device still initialized')
             return -1
-        device = scTDC.Device(inifilepath=self.libpath,autoinit=False)
-        # initialize TDC --- and check for error!
-        retcode, errmsg = device.initialize()
-        if retcode < 0:
-            print("error during init:", retcode, errmsg)
-            return -1
-        else:
-            print("successfully initialized")
-        os.chdir(folder_init)
-        return device     
-
     @property
     def exposureTime(self):
         """Exposure time in volts"""
@@ -196,6 +234,14 @@ class SC_TDC(object,):
     def exposureTime(self,value):
         self._exposure_time = value
 
+    @property
+    def libPath(self):
+        """Exposure time in volts"""
+        return self._libPath
+    
+    @libPath.setter
+    def libPath(self,value):
+        self._libPath = value
 
     @property
     def dataCallback(self):
@@ -233,11 +279,11 @@ class SC_TDC(object,):
     def closeDevice(self):
         # clean up
         self.closePipe() # Closing pipe        
-        self.device.deinitialize() # Deinitialize device
+        self.deinitializeDevice() # Deinitialize device
 
     def resetDevice(self):
         self.closeDevice()
-        self.initializeDevice()
+        self.device = self.initializeDevice()
         self.openPipe()
         # clean up
 

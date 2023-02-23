@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>262</width>
-    <height>205</height>
+    <width>356</width>
+    <height>247</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,6 +21,89 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_17">
+        <item>
+         <widget class="QLabel" name="label_18">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Filename</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="filename_lineEdit">
+          <property name="inputMask">
+           <string/>
+          </property>
+          <property name="text">
+           <string>tdc_gpx3.ini</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <item>
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>Path</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="folderPath_lineEdit">
+          <property name="text">
+           <string>C:\\Users\\attose1_VMI\\Documents\\Python_Scripts\\scTDC\\scTDC_Python_SDK_v1.3.0\\scTDC_Py\\Library\\</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="openPath_pushButton">
+          <property name="text">
+           <string>Open</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QPushButton" name="initialize_pushButton">
+          <property name="text">
+           <string>Initialize</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="deinitialize_pushButton">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Deinitialize</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="connectionStatus_label">
+          <property name="text">
+           <string>OFF</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
        <layout class="QHBoxLayout" name="horizontalLayout_3">
         <item>
          <widget class="QLabel" name="label_16">
@@ -30,7 +113,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QLineEdit" name="exposure_time">
+         <widget class="QLineEdit" name="exposureTime_lineEdit">
           <property name="inputMask">
            <string/>
           </property>
@@ -77,38 +160,38 @@
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout">
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
         <item>
-         <widget class="QPushButton" name="deinitialize_pushButton">
+         <widget class="QPushButton" name="startThread_pushButton">
           <property name="text">
-           <string>Initialize</string>
+           <string>Start</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="initialize_pushButton">
+         <widget class="QPushButton" name="stopThread_pushButton">
           <property name="text">
-           <string>Deinitialize</string>
+           <string>Stop</string>
           </property>
          </widget>
         </item>
        </layout>
       </item>
-      <item>
-       <spacer name="verticalSpacer">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>40</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
      </layout>
     </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
    </item>
   </layout>
  </widget>

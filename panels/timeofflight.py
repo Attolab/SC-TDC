@@ -89,7 +89,7 @@ class TimeOfFlightPanel(QWidget,Ui_Form):
     def onUpdateTofConfig(self):
         try:
             start = float(self.event_start.text())*1e-6
-            end = float(self.event_end.text())*1E-6
+            end = float(self.event_end.text())*1e-6
             binning = int(self.bin_size.text())
             maxqueue = int(self.max_queue.text())
         except Exception as e:

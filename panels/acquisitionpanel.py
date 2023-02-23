@@ -21,7 +21,7 @@
 ##############################################################################
 import time
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtCore, QtGui
+from PySide6 import QtCore,QtGui,QtWidgets
 from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,QTimer,QElapsedTimer,
     QMetaObject, QObject, QPoint, QRect,
     QSize, QTime, QUrl, Qt,Signal,QProcess)
@@ -36,6 +36,8 @@ from .ui.acquisitionpanel_ui import Ui_Form
 import numpy as np
 import threading
 from threading import Thread
+from core.threading import BasicThread,RepeatThread
+from core.filesaver import FileSaver
 import logging
 import os
 from datetime import date 
@@ -43,39 +45,9 @@ from datetime import date
 logger = logging.getLogger(__name__)
 
 
-class RepeatFunction(Thread):
-    """Call a function after a specified number of seconds:
-
-            t = Timer(30.0, f, args=[], kwargs={})
-            t.start()
-            t.cancel()     # stop the timer's action if it's still waiting
-
-    """
-
-    def __init__(self, n_repeats, function, args=[], kwargs={}):
-        Thread.__init__(self)
-        self.repeats = n_repeats
-        self.function = function
-        self.args = args
-        self.kwargs = kwargs
-        self.finished = threading.Event()
-        # self.motion_stopped = threading.Condition()
-
-    def cancel(self):
-        """Stop the timer if it hasn't finished yet"""
-        self.finished.set()
-
-    def run(self):
-        self._currentrepeat = 0
-        while not self.finished.is_set() and self._currentrepeat < self.repeats:
-            self.function(*self.args, **self.kwargs)
-            self._currentrepeat +=1
-        self.finished.set()
-
-
 class AcquisitionPanel(QWidget,Ui_Form):
-    # biasVoltageChange = QtCore.pyqtSignal(int)
-    
+    closeFile = Signal()
+    signal_UpdateIndexing = Signal(object)
 
     def __init__(self,parent=None):
         super(AcquisitionPanel, self).__init__(parent)
@@ -88,15 +60,26 @@ class AcquisitionPanel(QWidget,Ui_Form):
         self.initializeDate()
         self.folderPath_lineEdit.setText(self.initializeDate())
 
+        # Acquisition status
         self._in_acq = False
-        self._repeating_thread = None
         self._stop_all_acquisitions = False
 
+        # FileSaver class
+        self._filesaver = FileSaver()
+        self.closeFile.connect(self._filesaver.closeFiles)
+        self._filesaver.start()
         # Timer thread
-        # self._elapsed_time_thread = QtCore.QTimer()
-        # self._elapsed_time = QtCore.QElapsedTimer()
-        # self._elapsed_time_thread.timeout.connect(self.updateTimer)
-        # self._elapsed_time_thread.start(1000)        
+        self._elapsed_time_thread = QtCore.QTimer()
+        self._elapsed_time = QtCore.QElapsedTimer()
+        self._elapsed_time_thread.timeout.connect(self.updateTimer)
+        self._elapsed_time_thread.start(1000)        
+
+        # Repeating thread
+        self._repeating_thread = None
+
+    @property
+    def fileSaver(self):
+        return self._filesaver
 
     def initializeDate(self):
         today = date.today()
@@ -109,38 +92,32 @@ class AcquisitionPanel(QWidget,Ui_Form):
         return current_directory
 
     def connectSignals(self):
-        # self.start_acq_pushButton.clicked.connect(self.startAcqClicked)
-        # self.end_acq_pushButton.clicked.connect(self.endAcqClicked)
+        self.start_acq_pushButton.clicked.connect(self.startAcqClicked)
+        self.end_acq_pushButton.clicked.connect(self.endAcqClicked)
         self.openPath_pushButton.clicked.connect(self.openPath)
+        self.signal_UpdateIndexing.connect(self.updateIndexing)
         
     def openPath(self):
-        # current_dir = self.folderPath_lineEdit.text(directory)
-
-        directory = QtGui.QFileDialog.getExistingDirectory(self, "Open Directory",
+        directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Open Directory",
                                              "/home",
-                                             QtGui.QFileDialog.ShowDirsOnly
-                                             | QtGui.QFileDialog.DontResolveSymlinks)
-        if directory is not None:
+                                             QtWidgets.QFileDialog.ShowDirsOnly
+                                             | QtWidgets.QFileDialog.DontResolveSymlinks)
+        if bool(directory):
             self.folderPath_lineEdit.setText(directory)            
-            # self.folderPath_lineEdit.setText(current_dir)
-
-
     
     
     def updatePosition(self,pos):
         self.status_position.setText(f'{pos}')
 
-
     def savePositionArray(self,position_array):
         self._stageDelays = position_array
 
-
-    def updateIndexing(self,position_array,index,steps):
+    def updateIndexing(self,event):
+        position_array,index,steps = event
         self.status_position.setText(self.makeFormatOuput(position_array[0], position_array[-1]))
         self.status_image.setText(self.makeFormatOuput(index[0],index[-1]))
         self.status_steps.setText(self.makeFormatOuput(steps[0],steps[-1]))
-        acq_time = float(self.acq_time.text())
-        
+        acq_time = float(self.acquisitionTime_lineEdit.text())        
         # Estimate the length of the scan:
         stageVelocity = 1.0 # mm/s
         totalStageMotion = np.sum(np.abs(np.diff(self._stageDelays)))
@@ -161,21 +138,91 @@ class AcquisitionPanel(QWidget,Ui_Form):
         m = int(round(m))
         h = int(round(h))
         return h,m,s
-    def run_acquisition(self,):
-        print(time.time())
+
+    def _collectAcquisitionSettings(self):
+        # Position array
+        # position_array = acq._stageDelays
+        position_array = np.zeros((5,))
+        # Filename
+        filename = os.path.join(self.folderPath_lineEdit.text(),self.filePrefix_lineEdit.text())
+        logger.info('Filename to store to: {}'.format(filename))
+        # # Index
+        index = 0
+        # index = acq.startindex.value()
+        # # Check for valid index
+        # index = self.check_index(filename,0)
+        # Updated index value
+        # logger.info('Start index is {}'.format(index))
+        # acq.startindex.setValue(index)        
+        acq_time = float(self.acquisitionTime_lineEdit.text())
+        logger.info('Acq time is {} s'.format(acq_time))
+        # logger.info(f'Number of steps is {len(position_array)}')
+        # logger.info('Will repeat this {} times'.format(repeats))        
+        return filename,index,acq_time,position_array
+
+    def run_acquisition(self,acq_time,filename,index,position_array):
+        numberofsteps = len(position_array) 
+        final_index = index+numberofsteps-1
+        currentstep = 0  
+        print(position_array)          
+        for pos in position_array:
+            if not self._stop_all_acquisitions:
+                self._in_acq = True
+                currentstep += 1
+                # Move the stage
+                # self.signal_LaunchStageMotion.emit(pos)
+                # Initialize the variable such that the following while wait for the variable to change before pursuing
+                self._stage_ismoving = False
+                # Update current position / index and step number
+                self.signal_UpdateIndexing.emit(([pos, position_array[-1]], [index , final_index],[currentstep , numberofsteps]))
+                # Wait for the stage to reach its final position
+                while self._stage_ismoving:
+                            time.sleep(0.1)                            
+                try:
+                    if self._in_acq:
+                        #Open selected files except log
+                        self._filesaver.openFiles(filename,index,tof=1,log=0)
+                        self.status_label.setText('Acquiring...')        
+                        logger.info('Starting Acquisition')
+                        start = time.time()
+                        time_val = 10*acq_time
+                        if acq_time != -1:
+                            start = time.time()
+                            timeSpent = time.time() - start
+
+                            while timeSpent < acq_time and self._in_acq and not(self._stop_all_acquisitions):
+                                # pPB(round(timeSpent,1)*10, time_val, prefix = 'Progress:', suffix = 'Complete', length = 50)
+                                time.sleep(0.05)
+                                timeSpent = time.time() - start
+
+                        self.endAcquisition()
+                        tot_time = time.time()-start
+                        logger.info('ENDING, time taken {}s or {} minutes'.format(tot_time,tot_time/60.0))                    
+                        # # Saving parameters
+                        # voltage = self.acqtab.bias_voltage.value()
+                        # finethreshold = self.acqtab.fine_threshold.value()
+                        # coarsethreshold = self.acqtab.coarse_threshold.value()
+                        # #Open only log
+                        # self._filesaver.openFiles(filename,index,0,0,0,0,1)                    
+                        # # Saving image number, acquisition time, stage position, voltage, fine threshold, coarse threshold                    
+                        # self._filesaver.writeLog(filename,index,round(tot_time),pos,voltage,finethreshold,coarsethreshold)
+                        # self._filesaver.closeLogFile()
+                        index += 1
+
+
+                except Exception as e:
+                    logger.error(str(e))
+                    return
     def startAcqClicked(self):
         self._stop_all_acquisitions = False
-
-        # filename,index,raw,toa,tof,blob,acq_time,repeats,position_array = self._collectAcquisitionSettings()
-
+        filename,index,acq_time,position_array = self._collectAcquisitionSettings()
         if self._repeating_thread is not None:
             self._repeating_thread.cancel()
             self._repeating_thread = None
-        self._repeating_thread = RepeatFunction(5,self.run_acquisition,())        
-
-        # self._repeating_thread = RepeatFunction(repeats,self.run_acquisition,(acq_time,filename,index,raw,toa,tof,blob,position_array))        
+        self._repeating_thread = RepeatThread(1,self.run_acquisition,(acq_time,filename,index,position_array))
         self._repeating_thread.start()
-        self._elapsed_time.restart()   
+        self._elapsed_time.restart()          
+
     def endAcqClicked(self):
         # self.acqtab.end_movingstage()
         self._stop_all_acquisitions = True
@@ -185,9 +232,10 @@ class AcquisitionPanel(QWidget,Ui_Form):
             self._repeating_thread = None 
 
     def endAcquisition(self):
-        self.text_status.setText('Live')
+        self.closeFile.emit()    
+        self._repeating_thread.cancel()
         self._in_acq = False
-        self.closeFile.emit()
+        self.status_label.setText('Live')
         self._elapsed_time.restart()
 
 
@@ -202,6 +250,9 @@ class AcquisitionPanel(QWidget,Ui_Form):
             m, s = divmod(seconds, 60)
             h, m = divmod(m, 60)
             return h,m,s
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+        self._elapsed_time_thread.stop()
+        return super().closeEvent(event)
 
 def main():
     import sys

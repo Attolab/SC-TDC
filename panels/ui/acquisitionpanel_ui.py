@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'acquisitionpanel.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.2.4
+## Created by: Qt User Interface Compiler version 6.4.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -68,10 +68,10 @@ class Ui_Form(object):
 
         self.horizontalLayout_6.addWidget(self.label_8)
 
-        self.exposureTime_lineEdit = QLineEdit(Form)
-        self.exposureTime_lineEdit.setObjectName(u"exposureTime_lineEdit")
+        self.acquisitionTime_lineEdit = QLineEdit(Form)
+        self.acquisitionTime_lineEdit.setObjectName(u"acquisitionTime_lineEdit")
 
-        self.horizontalLayout_6.addWidget(self.exposureTime_lineEdit)
+        self.horizontalLayout_6.addWidget(self.acquisitionTime_lineEdit)
 
         self.label_9 = QLabel(Form)
         self.label_9.setObjectName(u"label_9")
@@ -266,7 +266,7 @@ class Ui_Form(object):
         self.label_7.setText(QCoreApplication.translate("Form", u"Prefix:", None))
         self.filePrefix_lineEdit.setText(QCoreApplication.translate("Form", u"test_", None))
         self.label_8.setText(QCoreApplication.translate("Form", u"Acquisition Time:", None))
-        self.exposureTime_lineEdit.setText(QCoreApplication.translate("Form", u"10", None))
+        self.acquisitionTime_lineEdit.setText(QCoreApplication.translate("Form", u"10", None))
         self.label_9.setText(QCoreApplication.translate("Form", u"ms", None))
         self.lineEdit_7.setText(QCoreApplication.translate("Form", u"Position", None))
         self.lineEdit_8.setText(QCoreApplication.translate("Form", u"Image number", None))
