@@ -73,6 +73,7 @@ from panels.timeofflight import TimeOfFlightPanel
 from panels.acquisitionpanel import AcquisitionPanel
 from panels.viewerconfig import ViewerConfig
 from panels.TDCconfig import TDCConfig
+from panels.stageControl import StageControl
 from SC_TDC import SC_TDC
 import logging
 
@@ -133,24 +134,32 @@ class SC_TDC_viewer(QMainWindow,):
         self._dock_viewer_config.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
         self._dock_viewer_config.setWidget(self._viewer_config_panel)
         self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_viewer_config)         
-        # Tof panel used for display
-        self._tof_panel = TimeOfFlightPanel(self)
-        self._dock_tof = QDockWidget('Time of Flight',self)
-        self._dock_tof.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
-        self._dock_tof.setWidget(self._tof_panel)
-        self.addDockWidget(Qt.RightDockWidgetArea,self._dock_tof)    
         # Acquisition panel used for acquisition parameters
         self._acq_panel = AcquisitionPanel(self)
         self._dock_acq = QDockWidget('Acquisition',self)
         self._dock_acq.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
         self._dock_acq.setWidget(self._acq_panel)
         self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_acq) 
-
+        # Stage control panel used for acquisition parameters
+        self._stage_panel = StageControl(self)
+        self._dock_stage = QDockWidget('Stage control',self)
+        self._dock_stage.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
+        self._dock_stage.setWidget(self._stage_panel)
+        self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_stage) 
+        # Tof panel used for display
+        self._tof_panel = TimeOfFlightPanel(self)
+        self._dock_tof = QDockWidget('Time of Flight',self)
+        self._dock_tof.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
+        self._dock_tof.setWidget(self._tof_panel)
+        self.addDockWidget(Qt.RightDockWidgetArea,self._dock_tof)    
+        self.tabifyDockWidget(self._dock_acq,self._dock_viewer_config)
+        self.tabifyDockWidget(self._dock_viewer_config,self._dock_TDC_config)
+        # QMainWindow::tabifyDockWidget(QDockWidget *first, QDockWidget *second)
     def connectSignals(self,):
-        self._TDC_config_panel.startThreadSignal.connect(self.TDC.start_thread)
-        self._TDC_config_panel.endThreadSignal.connect(self.TDC.stop_thread)
-        self._TDC_config_panel.connectSignal.connect(self.TDC.connectDevice)
-        self._TDC_config_panel.disconnectSignal.connect(self.TDC.disconnectDevice)
+        self._TDC_config_panel.startThread_signal.connect(self.TDC.start_thread)
+        self._TDC_config_panel.endThread_signal.connect(self.TDC.stop_thread)
+        self._TDC_config_panel.connect_signal.connect(self.TDC.connectDevice)
+        self._TDC_config_panel.disconnect_signal.connect(self.TDC.disconnectDevice)
         self._TDC_config_panel.updateExposureTimeChange.connect(self.onExposureTimeUpdate)
         self._TDC_config_panel.updateLibPathChange.connect(self.onLibPathChangeUpdate)
 

@@ -59,7 +59,7 @@ class TimeOfFlightPanel(QWidget,Ui_Form):
 
         self._tof_start = 0.0
         self._tof_end = 1000.0
-        self._tof_bin = 10000
+        self._tof_bin = 500
         self._maxqueue = 1000
         self.makeBlobTrendQueue()
         self.setupTofConfig()

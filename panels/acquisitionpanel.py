@@ -219,6 +219,8 @@ class AcquisitionPanel(QWidget,Ui_Form):
         if self._repeating_thread is not None:
             self._repeating_thread.cancel()
             self._repeating_thread = None
+        self.start_acq_pushButton.setEnabled(False)
+        self.end_acq_pushButton.setEnabled(True)            
         self._repeating_thread = RepeatThread(1,self.run_acquisition,(acq_time,filename,index,position_array))
         self._repeating_thread.start()
         self._elapsed_time.restart()          
@@ -228,12 +230,13 @@ class AcquisitionPanel(QWidget,Ui_Form):
         self._stop_all_acquisitions = True
         self.endAcquisition()
         if self._repeating_thread is not None:
+            self.start_acq_pushButton.setEnabled(True)
+            self.end_acq_pushButton.setEnabled(False)            
             self._repeating_thread.cancel()
             self._repeating_thread = None 
 
     def endAcquisition(self):
         self.closeFile.emit()    
-        self._repeating_thread.cancel()
         self._in_acq = False
         self.status_label.setText('Live')
         self._elapsed_time.restart()

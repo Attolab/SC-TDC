@@ -8,8 +8,9 @@ from PySide6 import QtWidgets,QtCore,QtGui
 # from .ThorlabsAPTStage import ThorlabsAPTStage
 # from .ui.delays_ui import Ui_stageControl
 # from .ui.settingsDialogUI import Ui_SettingsDialog
+from .ui.stageControl_ui import Ui_stageControl
 
-from ui.stageControl_ui import Ui_stageControl
+# from ui.stageControl_ui import Ui_stageControl
 # from ui.settingsDialogUI import Ui_SettingsDialog
 # from .settingsDialog import SettingsDialog
 import threading
@@ -53,7 +54,7 @@ class StageControl(QtWidgets.QWidget):
     signal_stagepositionarray = QtCore.Signal(object)
 
     # Initialize the widget. It won't show up on screen after this.
-    def __init__(self):
+    def __init__(self,parent):
         ## Initialization ##
         # First class the parent class (QWidget) constructor.
         QtWidgets.QWidget.__init__(self)
@@ -98,7 +99,7 @@ class StageControl(QtWidgets.QWidget):
         self.ui.move_pushButton.clicked.connect(self.moveStage_button)
         self.ui.stop_pushButton.clicked.connect(self.stopStage_button)
         # You can also pass paramaters from signals to slots. This will be evident later in the code.
-        self.ui.pushButton_stageSettings.clicked.connect(self.openSettingsDialog)
+        # self.ui.pushButton_stageSettings.clicked.connect(self.openSettingsDialog)
         # Connect the stageMode combobox to the stageMeode_changed() method.
         self.ui.cBox_stageMode.currentIndexChanged.connect(self.stageMode_changed)
         # Connect the delayInput button being clicked to the parseDelayInput method.
@@ -107,7 +108,7 @@ class StageControl(QtWidgets.QWidget):
         self.ui.cBox_stageSelection.currentIndexChanged.connect(self.stageSelection_changed)
         self.ui.textEdit_delayInput.blockCountChanged.connect(self.parseDelayInput)
         self.ui.delayScheme_comboBox.currentIndexChanged.connect(self.parseDelayInput)
-        self.ui.absoluteMotion_radioButton.stateChanged.connect(self.parseDelayInput)
+        self.ui.absoluteMotion_radioButton.toggled.connect(self.parseDelayInput)
 
 
 

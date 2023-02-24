@@ -37,51 +37,70 @@ logger = logging.getLogger(__name__)
 class TDCConfig(QtWidgets.QWidget,Ui_Form):
     updateExposureTimeChange = QtCore.Signal(int)
     updateLibPathChange = QtCore.Signal(str) 
-    startThreadSignal = QtCore.Signal()
-    endThreadSignal = QtCore.Signal()
-    connectSignal = QtCore.Signal()
-    disconnectSignal = QtCore.Signal()
+    startThread_signal = QtCore.Signal()
+    endThread_signal = QtCore.Signal()
+    connect_signal = QtCore.Signal()
+    disconnect_signal = QtCore.Signal()
     def __init__(self,parent=None):
         super(TDCConfig, self).__init__(parent)
 
         # Set up the user interface from Designer.
-        self.setupUi(self)  
+        # self.setupUi(self)  
+        self.ui = Ui_Form()
+        self.ui.setupUi(self)  
+        self.setupWindows()
         self.connectSignals()
-        
+
+    def setupWindows(self):
+        self.ui.startThread_pushButton.setEnabled(True)
+        self.ui.stopThread_pushButton.setEnabled(False)
+
+
     def connectSignals(self):
-        self.openPath_pushButton.clicked.connect(self.openPath)
-        self.exposureTime_lineEdit.returnPressed.connect(self.exposureTimeChange)
-        self.startThread_pushButton.clicked.connect(self.startThreadSignal.emit)
-        self.stopThread_pushButton.clicked.connect(self.endThreadSignal.emit)
-        self.initialize_pushButton.clicked.connect(self.connectSignal.emit)
-        self.deinitialize_pushButton.clicked.connect(self.disconnectSignal.emit)
-        self.folderPath_lineEdit.returnPressed.connect(self.configurationFileChange)
-        self.filename_lineEdit.returnPressed.connect(self.configurationFileChange)
+        self.ui.openPath_pushButton.clicked.connect(self.openPath)
+        self.ui.exposureTime_lineEdit.returnPressed.connect(self.exposureTimeChange)
+        self.ui.startThread_pushButton.clicked.connect(self.startThread)
+        self.ui.stopThread_pushButton.clicked.connect(self.endThread)
+        # self.startThread_pushButton.clicked.connect(self.startThreadSignal.emit)
+        # self.stopThread_pushButton.clicked.connect(self.endThreadSignal.emit)        
+        self.ui.initialize_pushButton.clicked.connect(self.connect_signal.emit)
+        self.ui.deinitialize_pushButton.clicked.connect(self.disconnect_signal.emit)
+        self.ui.folderPath_lineEdit.returnPressed.connect(self.configurationFileChange)
+        self.ui.filename_lineEdit.returnPressed.connect(self.configurationFileChange)
     def openPath(self):
         directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Open Directory",
                                              "/home",
                                              QtWidgets.QFileDialog.ShowDirsOnly
                                              | QtWidgets.QFileDialog.DontResolveSymlinks)
 
-        self.folderPath_lineEdit.setText(directory)
+        self.ui.folderPath_lineEdit.setText(directory)
 
+
+    def startThread(self):
+        self.startThread_signal.emit()
+        self.ui.startThread_pushButton.setEnabled(False)
+        self.ui.stopThread_pushButton.setEnabled(True)
+    def endThread(self):
+        self.endThread_signal.emit()
+        self.ui.startThread_pushButton.setEnabled(True)
+        self.ui.stopThread_pushButton.setEnabled(False)
 
     def isDeviceInitialized(self,isInitialized):
         if isInitialized:
-            self.connectionStatus_label.setText('ON')
-            self.initialize_pushButton.setEnabled(False)
-            self.deinitialize_pushButton.setEnabled(True)
-            self.folderPath_lineEdit.setEnabled(False)
-            self.filename_lineEdit.setEnabled(False)            
+            self.ui.connectionStatus_label.setText('ON')
+            self.ui.initialize_pushButton.setEnabled(False)
+            self.ui.deinitialize_pushButton.setEnabled(True)
+            self.ui.folderPath_lineEdit.setEnabled(False)
+            self.ui.filename_lineEdit.setEnabled(False)            
         else:
-            self.connectionStatus_label.setText('OFF')
-            self.deinitialize_pushButton.setEnabled(False)
-            self.initialize_pushButton.setEnabled(True)
-            self.folderPath_lineEdit.setEnabled(True)
-            self.filename_lineEdit.setEnabled(True)
+            self.ui.connectionStatus_label.setText('OFF')
+            self.ui.deinitialize_pushButton.setEnabled(False)
+            self.ui.initialize_pushButton.setEnabled(True)
+            self.ui.folderPath_lineEdit.setEnabled(True)
+            self.ui.filename_lineEdit.setEnabled(True)
             
     def exposureTimeChange(self,):
-        exposureTime = int(self.exposureTime_lineEdit.text())
+        exposureTime = int(self.ui.exposureTime_lineEdit.text())
         self.updateExposureTimeChange.emit(exposureTime)
 
     def configurationFileChange(self,):
