@@ -10,9 +10,11 @@ from PySide6 import QtWidgets,QtCore,QtGui
 # from .ui.settingsDialogUI import Ui_SettingsDialog
 from .ui.stageControl_ui import Ui_stageControl
 from utils.parsedelays import parseStringInput
+from utils.Stage.Smaract.smaract import SmarAct
 # from ui.stageControl_ui import Ui_stageControl
 # from ui.settingsDialogUI import Ui_SettingsDialog
 # from .settingsDialog import SettingsDialog
+import logging
 import threading
 from threading import Thread
 import time
@@ -66,6 +68,9 @@ class StageControl(QtWidgets.QWidget):
         self.connectSignals()
         # Initialize the abstract stage that does nothing:
         # self._stage = Stage()
+        self._stage = SmarAct()
+        self._stage.enable()
+
         # Array to contain the positions to run though
         self._stagePositions = np.asarray([])
         # The index of currently set stage delay
@@ -238,17 +243,16 @@ class StageControl(QtWidgets.QWidget):
         except Exception as e:
             print('Cannot read array, check input')
             return
-        print('Action Complete')
     #Function that reacts to the stop button            
     def stopStage_button(self):  
         self.end_movingstage()
         print('Reached killing of thread')
         self._stage.stop_motion()
-        try:
-            self.ui.status_position.setText(f'{self._stage.get_pos()}')  
-        except Exception as e:
-            logger.error(str(e))
-            return
+        # try:
+            # self.ui.status_position.setText(f'{self._stage.get_pos()}')  
+        # except Exception as e:
+        #     logging.error(str(e))
+        #     return
         if self._moving_stage_thread is not None:
             self._moving_stage_thread.cancel()
             self._moving_stage_thread = None         
@@ -264,29 +268,30 @@ class StageControl(QtWidgets.QWidget):
         self.signal_stagepositionupdated.emit(lastpos)
 
         #Moving command            
-        self._stage.move_to_pos(destination)
-
+        self._stage.move_to_pos(pos=destination)        
         #Checking stage motion and updating current position
-        while self._stage.check_in_motion() and self._in_motion:
+        while abs(destination-lastpos)>self._stage.errorPosition and self._in_motion:
             try:
                 time.sleep(0.1)
                 lastpos = self._stage.get_pos()   
+                print(lastpos)
                 self.signal_stagepositionupdated.emit(lastpos)
                 # self.status_position.setText(f'{lastpos}')
-                # print(round(100 * (lastpos-initialpos)/(destination-initialpos)))
+                print(round(100 * (lastpos-initialpos)/(destination-initialpos)))
                 # self.motion_progressBar.setValue(round(100 * (lastpos-initialpos)/destination))
             except Exception as e:
-                # ??? logger.error(str(e))
+                logging.error(str(e))
                 return                
         #Checking final position
-        if abs(lastpos - destination) > 0.01:            
-            print(f'Crashed at {lastpos}mm\nNumber of try is {numberoftry}')
-            if numberoftry < 5:
-                self._stage.enable()
-                self.moveStage(destination,numberoftry + 1)                
-            else:
-                print('Stage failed to reached destination')
+        # if abs(lastpos - destination) > 0.01:            
+            # print(f'Crashed at {lastpos}mm\nNumber of try is {numberoftry}')
+            # if numberoftry < 5:
+                # self._stage.enable()
+                # self.moveStage(destination,numberoftry + 1)                
+            # else:
+                # print('Stage failed to reached destination')
         else: 
+            print('Finished')
             self.end_movingstage()
  
      #Function to convert time input in distance as a function of the number of pass
@@ -313,6 +318,12 @@ class StageControl(QtWidgets.QWidget):
         self._moving_stage_thread.cancel()
         self._in_motion = False
         self.signal_stagepositionfixed.emit(False)       
+
+
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:    
+        self._stage.end_movingstage()
+        self._stage.close_communication()
+        return super().closeEvent(event)
 
 def main():
     import sys

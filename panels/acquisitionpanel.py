@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 class AcquisitionPanel(QWidget,Ui_Form):
     closeFile = Signal()
     signal_UpdateIndexing = Signal(object)
-
+    signal_LaunchStageMotion = Signal(float)
     def __init__(self,parent=None):
         super(AcquisitionPanel, self).__init__(parent)
 
@@ -189,9 +189,9 @@ class AcquisitionPanel(QWidget,Ui_Form):
                 self._in_acq = True
                 currentstep += 1
                 # Move the stage
-                # self.signal_LaunchStageMotion.emit(pos)
+                self.signal_LaunchStageMotion.emit(pos)
                 # Initialize the variable such that the following while wait for the variable to change before pursuing
-                self._stage_ismoving = False
+                self._stage_ismoving = True
                 # Update current position / index and step number
                 self.signal_UpdateIndexing.emit(([pos, position_array[-1]], [index , final_index],[currentstep , numberofsteps]))
                 # Wait for the stage to reach its final position
