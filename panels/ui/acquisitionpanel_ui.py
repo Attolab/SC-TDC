@@ -15,15 +15,17 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLCDNumber, QLabel,
-    QLineEdit, QPushButton, QSizePolicy, QSpacerItem,
-    QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QComboBox, QHBoxLayout, QLCDNumber,
+    QLabel, QLineEdit, QPlainTextEdit, QPushButton,
+    QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
+
+from pyqtgraph import PlotWidget
 
 class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName(u"Form")
-        Form.resize(448, 444)
+        Form.resize(539, 676)
         self.verticalLayout_2 = QVBoxLayout(Form)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.horizontalLayout_4 = QHBoxLayout()
@@ -81,9 +83,88 @@ class Ui_Form(object):
 
         self.verticalLayout_2.addLayout(self.horizontalLayout_6)
 
-        self.verticalSpacer = QSpacerItem(20, 114, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer = QSpacerItem(20, 114, QSizePolicy.Minimum, QSizePolicy.Maximum)
 
         self.verticalLayout_2.addItem(self.verticalSpacer)
+
+        self.verticalLayout_4 = QVBoxLayout()
+        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
+        self.horizontalLayout = QHBoxLayout()
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout.addItem(self.horizontalSpacer)
+
+        self.update_pushButton = QPushButton(Form)
+        self.update_pushButton.setObjectName(u"update_pushButton")
+
+        self.horizontalLayout.addWidget(self.update_pushButton)
+
+        self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout.addItem(self.horizontalSpacer_2)
+
+
+        self.verticalLayout_4.addLayout(self.horizontalLayout)
+
+        self.plot_delays = PlotWidget(Form)
+        self.plot_delays.setObjectName(u"plot_delays")
+        sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.plot_delays.sizePolicy().hasHeightForWidth())
+        self.plot_delays.setSizePolicy(sizePolicy)
+
+        self.verticalLayout_4.addWidget(self.plot_delays)
+
+        self.textEdit_delayInput = QPlainTextEdit(Form)
+        self.textEdit_delayInput.setObjectName(u"textEdit_delayInput")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.textEdit_delayInput.sizePolicy().hasHeightForWidth())
+        self.textEdit_delayInput.setSizePolicy(sizePolicy1)
+
+        self.verticalLayout_4.addWidget(self.textEdit_delayInput)
+
+        self.horizontalLayout_9 = QHBoxLayout()
+        self.horizontalLayout_9.setObjectName(u"horizontalLayout_9")
+        self.label_delayScheme = QLabel(Form)
+        self.label_delayScheme.setObjectName(u"label_delayScheme")
+
+        self.horizontalLayout_9.addWidget(self.label_delayScheme)
+
+        self.cBox_stageMode = QComboBox(Form)
+        self.cBox_stageMode.addItem("")
+        self.cBox_stageMode.addItem("")
+        self.cBox_stageMode.addItem("")
+        self.cBox_stageMode.addItem("")
+        self.cBox_stageMode.addItem("")
+        self.cBox_stageMode.addItem("")
+        self.cBox_stageMode.setObjectName(u"cBox_stageMode")
+
+        self.horizontalLayout_9.addWidget(self.cBox_stageMode)
+
+        self.label_stageMode = QLabel(Form)
+        self.label_stageMode.setObjectName(u"label_stageMode")
+
+        self.horizontalLayout_9.addWidget(self.label_stageMode)
+
+        self.delayScheme_comboBox = QComboBox(Form)
+        self.delayScheme_comboBox.addItem("")
+        self.delayScheme_comboBox.addItem("")
+        self.delayScheme_comboBox.addItem("")
+        self.delayScheme_comboBox.addItem("")
+        self.delayScheme_comboBox.addItem("")
+        self.delayScheme_comboBox.setObjectName(u"delayScheme_comboBox")
+
+        self.horizontalLayout_9.addWidget(self.delayScheme_comboBox)
+
+
+        self.verticalLayout_4.addLayout(self.horizontalLayout_9)
+
+
+        self.verticalLayout_2.addLayout(self.verticalLayout_4)
 
         self.horizontalLayout_8 = QHBoxLayout()
         self.horizontalLayout_8.setSpacing(0)
@@ -94,35 +175,35 @@ class Ui_Form(object):
         self.lineEdit_7 = QLineEdit(Form)
         self.lineEdit_7.setObjectName(u"lineEdit_7")
         self.lineEdit_7.setEnabled(False)
-        sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.lineEdit_7.sizePolicy().hasHeightForWidth())
-        self.lineEdit_7.setSizePolicy(sizePolicy)
+        sizePolicy2 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        sizePolicy2.setHorizontalStretch(0)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(self.lineEdit_7.sizePolicy().hasHeightForWidth())
+        self.lineEdit_7.setSizePolicy(sizePolicy2)
 
         self.verticalLayout_9.addWidget(self.lineEdit_7)
 
         self.lineEdit_8 = QLineEdit(Form)
         self.lineEdit_8.setObjectName(u"lineEdit_8")
         self.lineEdit_8.setEnabled(False)
-        sizePolicy.setHeightForWidth(self.lineEdit_8.sizePolicy().hasHeightForWidth())
-        self.lineEdit_8.setSizePolicy(sizePolicy)
+        sizePolicy2.setHeightForWidth(self.lineEdit_8.sizePolicy().hasHeightForWidth())
+        self.lineEdit_8.setSizePolicy(sizePolicy2)
 
         self.verticalLayout_9.addWidget(self.lineEdit_8)
 
         self.lineEdit_9 = QLineEdit(Form)
         self.lineEdit_9.setObjectName(u"lineEdit_9")
         self.lineEdit_9.setEnabled(False)
-        sizePolicy.setHeightForWidth(self.lineEdit_9.sizePolicy().hasHeightForWidth())
-        self.lineEdit_9.setSizePolicy(sizePolicy)
+        sizePolicy2.setHeightForWidth(self.lineEdit_9.sizePolicy().hasHeightForWidth())
+        self.lineEdit_9.setSizePolicy(sizePolicy2)
 
         self.verticalLayout_9.addWidget(self.lineEdit_9)
 
         self.lineEdit_10 = QLineEdit(Form)
         self.lineEdit_10.setObjectName(u"lineEdit_10")
         self.lineEdit_10.setEnabled(False)
-        sizePolicy.setHeightForWidth(self.lineEdit_10.sizePolicy().hasHeightForWidth())
-        self.lineEdit_10.setSizePolicy(sizePolicy)
+        sizePolicy2.setHeightForWidth(self.lineEdit_10.sizePolicy().hasHeightForWidth())
+        self.lineEdit_10.setSizePolicy(sizePolicy2)
 
         self.verticalLayout_9.addWidget(self.lineEdit_10)
 
@@ -135,35 +216,35 @@ class Ui_Form(object):
         self.status_position = QLineEdit(Form)
         self.status_position.setObjectName(u"status_position")
         self.status_position.setEnabled(False)
-        sizePolicy1 = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
-        sizePolicy1.setHorizontalStretch(0)
-        sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.status_position.sizePolicy().hasHeightForWidth())
-        self.status_position.setSizePolicy(sizePolicy1)
+        sizePolicy3 = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(self.status_position.sizePolicy().hasHeightForWidth())
+        self.status_position.setSizePolicy(sizePolicy3)
 
         self.verticalLayout_10.addWidget(self.status_position)
 
         self.status_image = QLineEdit(Form)
         self.status_image.setObjectName(u"status_image")
         self.status_image.setEnabled(False)
-        sizePolicy1.setHeightForWidth(self.status_image.sizePolicy().hasHeightForWidth())
-        self.status_image.setSizePolicy(sizePolicy1)
+        sizePolicy3.setHeightForWidth(self.status_image.sizePolicy().hasHeightForWidth())
+        self.status_image.setSizePolicy(sizePolicy3)
 
         self.verticalLayout_10.addWidget(self.status_image)
 
         self.status_steps = QLineEdit(Form)
         self.status_steps.setObjectName(u"status_steps")
         self.status_steps.setEnabled(False)
-        sizePolicy1.setHeightForWidth(self.status_steps.sizePolicy().hasHeightForWidth())
-        self.status_steps.setSizePolicy(sizePolicy1)
+        sizePolicy3.setHeightForWidth(self.status_steps.sizePolicy().hasHeightForWidth())
+        self.status_steps.setSizePolicy(sizePolicy3)
 
         self.verticalLayout_10.addWidget(self.status_steps)
 
         self.status_scanLength = QLineEdit(Form)
         self.status_scanLength.setObjectName(u"status_scanLength")
         self.status_scanLength.setEnabled(False)
-        sizePolicy1.setHeightForWidth(self.status_scanLength.sizePolicy().hasHeightForWidth())
-        self.status_scanLength.setSizePolicy(sizePolicy1)
+        sizePolicy3.setHeightForWidth(self.status_scanLength.sizePolicy().hasHeightForWidth())
+        self.status_scanLength.setSizePolicy(sizePolicy3)
 
         self.verticalLayout_10.addWidget(self.status_scanLength)
 
@@ -209,11 +290,11 @@ class Ui_Form(object):
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.start_acq_pushButton = QPushButton(Form)
         self.start_acq_pushButton.setObjectName(u"start_acq_pushButton")
-        sizePolicy2 = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
-        sizePolicy2.setHorizontalStretch(0)
-        sizePolicy2.setVerticalStretch(0)
-        sizePolicy2.setHeightForWidth(self.start_acq_pushButton.sizePolicy().hasHeightForWidth())
-        self.start_acq_pushButton.setSizePolicy(sizePolicy2)
+        sizePolicy4 = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(self.start_acq_pushButton.sizePolicy().hasHeightForWidth())
+        self.start_acq_pushButton.setSizePolicy(sizePolicy4)
         font = QFont()
         font.setPointSize(16)
         self.start_acq_pushButton.setFont(font)
@@ -222,8 +303,8 @@ class Ui_Form(object):
 
         self.end_acq_pushButton = QPushButton(Form)
         self.end_acq_pushButton.setObjectName(u"end_acq_pushButton")
-        sizePolicy2.setHeightForWidth(self.end_acq_pushButton.sizePolicy().hasHeightForWidth())
-        self.end_acq_pushButton.setSizePolicy(sizePolicy2)
+        sizePolicy4.setHeightForWidth(self.end_acq_pushButton.sizePolicy().hasHeightForWidth())
+        self.end_acq_pushButton.setSizePolicy(sizePolicy4)
         self.end_acq_pushButton.setFont(font)
 
         self.verticalLayout.addWidget(self.end_acq_pushButton)
@@ -268,6 +349,22 @@ class Ui_Form(object):
         self.label_8.setText(QCoreApplication.translate("Form", u"Acquisition Time:", None))
         self.acquisitionTime_lineEdit.setText(QCoreApplication.translate("Form", u"10", None))
         self.label_9.setText(QCoreApplication.translate("Form", u"ms", None))
+        self.update_pushButton.setText(QCoreApplication.translate("Form", u"Refresh", None))
+        self.label_delayScheme.setText(QCoreApplication.translate("Form", u"Delay Scheme", None))
+        self.cBox_stageMode.setItemText(0, QCoreApplication.translate("Form", u"Position [mm]", None))
+        self.cBox_stageMode.setItemText(1, QCoreApplication.translate("Form", u"Time - Single Pass [ps]", None))
+        self.cBox_stageMode.setItemText(2, QCoreApplication.translate("Form", u"Time - Double Pass [ps]", None))
+        self.cBox_stageMode.setItemText(3, QCoreApplication.translate("Form", u"Time - Single Pass [fs]", None))
+        self.cBox_stageMode.setItemText(4, QCoreApplication.translate("Form", u"Time - Double Pass [fs]", None))
+        self.cBox_stageMode.setItemText(5, QCoreApplication.translate("Form", u"Index [no units]", None))
+
+        self.label_stageMode.setText(QCoreApplication.translate("Form", u"Stage Mode", None))
+        self.delayScheme_comboBox.setItemText(0, QCoreApplication.translate("Form", u"No Sorting", None))
+        self.delayScheme_comboBox.setItemText(1, QCoreApplication.translate("Form", u"Sort Acending", None))
+        self.delayScheme_comboBox.setItemText(2, QCoreApplication.translate("Form", u"Sort Decending", None))
+        self.delayScheme_comboBox.setItemText(3, QCoreApplication.translate("Form", u"Staggered Acending", None))
+        self.delayScheme_comboBox.setItemText(4, QCoreApplication.translate("Form", u"Staggered Decending", None))
+
         self.lineEdit_7.setText(QCoreApplication.translate("Form", u"Position", None))
         self.lineEdit_8.setText(QCoreApplication.translate("Form", u"Image number", None))
         self.lineEdit_9.setText(QCoreApplication.translate("Form", u"Steps", None))

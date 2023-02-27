@@ -103,7 +103,7 @@ class SC_TDC_viewer(QMainWindow,):
     resetTof = Signal()
     closeDevice_signal = Signal()
 
-    def __init__(self,parent=None):
+    def __init__(self,parent=None,):
         super(SC_TDC_viewer, self).__init__(parent)
         # Initialize windows
         self.setupWindows()
@@ -113,6 +113,10 @@ class SC_TDC_viewer(QMainWindow,):
         self._last_update = 0
         self._last_frame = 0.0
         self._frame_time = -1.0
+        # self.geometry()
+        # a = self.geometry().getRect()
+        # self.resize(self.size().height(),self.size().width())
+
 
     def start_TDC(self):
         # Initialize device in a separate class
@@ -140,12 +144,12 @@ class SC_TDC_viewer(QMainWindow,):
         self._dock_acq.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
         self._dock_acq.setWidget(self._acq_panel)
         self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_acq) 
-        # Stage control panel used for acquisition parameters
-        self._stage_panel = StageControl(self)
-        self._dock_stage = QDockWidget('Stage control',self)
-        self._dock_stage.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
-        self._dock_stage.setWidget(self._stage_panel)
-        self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_stage) 
+        # # Stage control panel used for acquisition parameters
+        # self._stageControl_panel = StageControl(self)
+        # self._dock_stage = QDockWidget('Stage control',self)
+        # self._dock_stage.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
+        # self._dock_stage.setWidget(self._stageControl_panel)
+        # self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_stage) 
         # Tof panel used for display
         self._tof_panel = TimeOfFlightPanel(self)
         self._dock_tof = QDockWidget('Time of Flight',self)
@@ -154,6 +158,15 @@ class SC_TDC_viewer(QMainWindow,):
         self.addDockWidget(Qt.RightDockWidgetArea,self._dock_tof)    
         self.tabifyDockWidget(self._dock_acq,self._dock_viewer_config)
         self.tabifyDockWidget(self._dock_viewer_config,self._dock_TDC_config)
+
+
+        # self._stageControl_panel.setMaximumWidth(500)
+        self._acq_panel.setMaximumWidth(500)
+        # self.showFullScreen()
+        # self.setWindowFlags()
+        # mainWindow->setWindowFlags(Qt::CustomizeWindowHint | Qt::FramelessWindowHint)
+        # self.setTabPosition()
+        self._tof_panel.showMaximized()
         # QMainWindow::tabifyDockWidget(QDockWidget *first, QDockWidget *second)
     def connectSignals(self,):
         self._TDC_config_panel.startThread_signal.connect(self.TDC.start_thread)
@@ -180,6 +193,8 @@ class SC_TDC_viewer(QMainWindow,):
         self.displayNow.connect(self._tof_panel.displayTof)
 
         self.closeDevice_signal.connect(self.TDC.closeDevice)
+
+        # self._acq_panel.start_acq_pushButton.clicked.connect(self._stageControl_panel.parseDelayInput)
 
         # self._acq_panel.end_acq_pushButton.clicked.connect(self.TDC.stop_thread)
         # self._acq_panel.start_acq_pushButton.clicked.connect(self.TDC.start_thread)
@@ -208,6 +223,7 @@ class SC_TDC_viewer(QMainWindow,):
         # print(timeit.default_timer())
         #Measure continously
         check_update = time.time()
+
         #Refresh rate
         if self._frame_time >=0 and (check_update-self._last_frame) > self._frame_time:
             self.refreshNow.emit()
@@ -241,13 +257,23 @@ def main():
     import sys
     import logging
     logging.basicConfig(level=logging.INFO,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    app = QApplication([])
-
-    
+    app = QApplication([])    
+    # screen_resolution = app.desktop().screenGeometry()
+    # width, height = screen_resolution.width(), screen_resolution.height()
     config = SC_TDC_viewer()
+
+
+
+
     app.lastWindowClosed.connect(config.closeDevice)
+
+    config.showMaximized()
+    config._screen = app.primaryScreen()        
+    rect = config._screen.geometry()
+    config.setGeometry(QRect(0,rect.height()*0.025,rect.width()*0.5,rect.height()*.925))
     config.show()
-    
+
     app.exec_()
+
 if __name__=="__main__":
     main()

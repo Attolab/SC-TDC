@@ -9,7 +9,7 @@ from PySide6 import QtWidgets,QtCore,QtGui
 # from .ui.delays_ui import Ui_stageControl
 # from .ui.settingsDialogUI import Ui_SettingsDialog
 from .ui.stageControl_ui import Ui_stageControl
-
+from utils.parsedelays import parseStringInput
 # from ui.stageControl_ui import Ui_stageControl
 # from ui.settingsDialogUI import Ui_SettingsDialog
 # from .settingsDialog import SettingsDialog
@@ -189,121 +189,21 @@ class StageControl(QtWidgets.QWidget):
     # All_delays: "series_a;series_b" is multiple series seperated by a semicolon.
     #           Different series are NOT sorted together.
     # Note that this method is too long for good coding practice and should probably be put into it's own class.
-    def parseDelayInput(self):
-        class DelayParseException(Exception):
-            def __init__(self, message):
-                Exception.__init__(self, message)
-
-        # Take the delay input string directly from the Delay Input textbox
+    def parseDelayInput(self,):
         delayInput = self.ui.textEdit_delayInput.toPlainText()
-        all_delays = np.asarray([])
-        # First check for paranthesis enclosed ranges:
-        measurement_strings = re.findall("(\(?[-\d.,;:\s]+\)?(?:\*\d+)?)", delayInput)
-
-
-        # print(f"delayInput: {delayInput}")
-        # print(f"meansurement_strings: {measurement_strings}")
-
-        for measurement_string in measurement_strings:
-            # Measurement string should always have either 1 or 2 substrings, depending
-
-            substrings = re.findall("[-\d.,;:\s]+", measurement_string)
-            # print(f"substrings: {substrings}")
-            # print(f"len(substrings): {len(substrings)}")
-            multiplier = 1
-            if len(substrings) == 2:
-                multiplier = int(substrings[1])
-            elif len(substrings) == 1:
-                multiplier = 1
-            else:
-                raise DelayParseException(f"Unable to make out a measurement and multiplier for this string: {measurement_string}, which gives {len(substrings)} substrings")
-            # print(multiplier)
-            measurement_delays = np.asarray([])
-
-            # Split the string on ; first.
-            series_strings = re.findall("[^;]+", substrings[0])
-            # Now do something for each string that defines a series:
-            for series_string in series_strings:
-                # Then split on , or any whitespace to find the range specifiers: "?:?:?"
-                range_strings = re.findall("[^,\s]+", series_string)
-                # print(f"range strings: {range_strings}")
-
-                series = np.asarray([])
-                for range_string in range_strings:
-                    # Extract the numbers by splitting on :.
-                    number_strings = re.findall("[^:]+", range_string)
-                    # If the range specifier is not either 1 or 3 string representations of numebers, the input is invalid:
-                    # 3 Numbers specify a range
-                    if len(number_strings) == 3:
-                        start = float(number_strings[0])
-                        step = float(number_strings[1])
-                        stop = float(number_strings[2])
-                        numberofsteps = abs(round(1.0 + abs((stop - start)/step)))
-                        
-                        this_range = np.linspace(start,stop,int(numberofsteps))
-                        # print(f"this_range: {this_range}")
-                        # range = np.arange(start, stop, step)
-                        # range = np.append(range,stop)
-                    # 1 number just specifies a single number
-                    elif len(number_strings) == 1:
-                        this_range = np.asarray([float(number_strings[0])])
-                    else:
-                        raise DelayParseException(
-                            f"Error! Following substring does not lead to either 1 or 3 numbers: {range_string}")
-
-                    # Add all of the series to the range:
-                    series = np.concatenate((series, this_range))
-                    # print(f"series: {series}")
-
-                # Now the series is complete, and must be sorted according to the option the user has chosen:
-                delayScheme_index = self.ui.delayScheme_comboBox.currentIndex()
-
-                # 0: No sorting:
-
-                # 1: Sort up
-                if delayScheme_index == 1:
-                    series = np.sort(series)
-
-                # 2: Sort down
-                elif delayScheme_index == 2:
-                    series = series[np.argsort(-series)]
-
-                # Staggered Acending
-                elif delayScheme_index == 3:
-                    series = np.sort(series)
-                    firstHalf = series[0::2]
-                    secondHalf = series[1::2]
-                    # Reverse the second half to get staggered ascending:
-                    secondHalf = secondHalf[::-1]
-                    series = np.concatenate((firstHalf, secondHalf))
-
-                # Staggered decending
-                elif delayScheme_index == 4:
-                    series = series[np.argsort(series)]
-                    firstHalf = series[0::2]
-                    secondHalf = series[1::2]
-                    # Reverse the first half to get staggered decending:
-                    firstHalf = firstHalf[::-1]
-                    series = np.concatenate((firstHalf, secondHalf))
-
-                # Concatenate together all the delays
-                measurement_delays = np.concatenate((measurement_delays, series))
-
-            # Repeat according to the multiplier, and add to all_delays
-            all_delays = np.concatenate((all_delays, np.tile(measurement_delays, multiplier)))
-
+        delayScheme_index = self.ui.delayScheme_comboBox.currentIndex()
+        parsed_arrays = parseStringInput(delayInput,delayScheme_index)
         currentDelayIdx = self.ui.cBox_stageMode.currentIndex()
-
-        #print(f"all delays: {all_delays}")
-
         if currentDelayIdx > 0:            
-            all_delays = self.ConvertTimeInDistance(all_delays,self.ui.offset_spinBox.value(), self.relateDelayIdx_to_NumberofPass(currentDelayIdx))
-        # Save the delays as a field parameter
-        self._stagePositions = all_delays.round(5)
+            parsed_arrays = self.ConvertTimeInDistance(parsed_arrays,self.ui.offset_spinBox.value(), self.relateDelayIdx_to_NumberofPass(currentDelayIdx))
+        # Save the delays as a field parameter        
+        self._stagePositions = parsed_arrays.round(5)
         # Send position array as a signal
         self.signal_stagepositionarray.emit(self._stagePositions)
         # Update the delays plot
         self.updateDelaysPlot()
+    # def convertDelay(self,):
+    #     return delay
 
 
     def relateDelayIdx_to_NumberofPass(self,index):

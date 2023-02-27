@@ -109,6 +109,15 @@ class AcquisitionPanel(QWidget,Ui_Form):
     def updatePosition(self,pos):
         self.status_position.setText(f'{pos}')
 
+
+    @property
+    def scanArray(self):
+        """Scan array"""
+        return self._scanArray    
+    @scanArray.setter
+    def scanArray(self,value):
+        self._scanArray = value
+
     def savePositionArray(self,position_array):
         self._stageDelays = position_array
 
@@ -131,14 +140,24 @@ class AcquisitionPanel(QWidget,Ui_Form):
     #Output for GUI
     def makeFormatOuput(self,input1,input2):
         return f'{input1}/{input2}'    
+    # def makeHoursMinutesSeconds(self,seconds):
+    #     m, s = divmod(seconds, 60)
+    #     h, m = divmod(m, 60)
+    #     s = int(round(s))
+    #     m = int(round(m))
+    #     h = int(round(h))
+    #     return h,m,s
+    def updateTimer(self):
+        if self._in_acq:
+            seconds = self._elapsed_time.elapsed()/1000
+            h,m,s = self.makeHoursMinutesSeconds(seconds)
+            self.elapsed_time_s.display(int(round(s)))
+            self.elapsed_time_m.display(int(round(m)))
+            self.elapsed_time_h.display(h)
     def makeHoursMinutesSeconds(self,seconds):
-        m, s = divmod(seconds, 60)
-        h, m = divmod(m, 60)
-        s = int(round(s))
-        m = int(round(m))
-        h = int(round(h))
-        return h,m,s
-
+            m, s = divmod(seconds, 60)
+            h, m = divmod(m, 60)
+            return h,m,s
     def _collectAcquisitionSettings(self):
         # Position array
         # position_array = acq._stageDelays
@@ -242,17 +261,6 @@ class AcquisitionPanel(QWidget,Ui_Form):
         self._elapsed_time.restart()
 
 
-    def updateTimer(self):
-        if self._in_acq:
-            seconds = self._elapsed_time.elapsed()/1000
-            h,m,s = self.makeHoursMinutesSeconds(seconds)
-            self.elapsed_time_s.display(int(round(s)))
-            self.elapsed_time_m.display(int(round(m)))
-            self.elapsed_time_h.display(h)
-    def makeHoursMinutesSeconds(self,seconds):
-            m, s = divmod(seconds, 60)
-            h, m = divmod(m, 60)
-            return h,m,s
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         self._elapsed_time_thread.stop()
         return super().closeEvent(event)
