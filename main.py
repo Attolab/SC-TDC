@@ -184,6 +184,8 @@ class SC_TDC_viewer(QMainWindow,):
         # self._acq_panel.end_acq_pushButton.clicked.connect(self.TDC.stop_thread)
         # self._acq_panel.start_acq_pushButton.clicked.connect(self.TDC.start_thread)
 
+        self._acq_panel.signal_LaunchStageMotion.connect(self._stage_panel.run_movingstage)
+        self._stage_panel.signal_stagepositionupdated.connect(self._acq_panel.updatePosition)
     def closeDevice(self):
         self.closeDevice_signal.emit()
 

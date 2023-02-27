@@ -36,7 +36,6 @@ def get_controller_locators():
         outList,
         ctypes.byref(ioListSize)
     )
-
     if status != 0:
         raise Exception('SmarAct SA_FindSystems error')
 
@@ -201,7 +200,7 @@ class SmarAct(object):
         if self.readStatus(status):
             raise Exception('SmarAct SA_Stop failed')   
 
-    def get_position(self, channel_index):
+    def getPosition(self, channel_index):
         """
             Return the current position of the positioner connected to the channel indexed by channel_index
             (starts at 0) in nanometers.
@@ -234,7 +233,7 @@ class SmarAct(object):
         if self.readStatus(status):
             raise Exception('SmarAct SA_SetPosition_S failed')            
 
-    def getSpeed(self, channel_index, speed):
+    def getSpeed(self, channel_index,):
         speed = ctypes.c_long()
         status = SmaractDll.SA_GetClosedLoopMoveSpeed_S(
             ctypes.c_ulong(self.controller_index),
@@ -256,7 +255,7 @@ class SmarAct(object):
         if self.readStatus(status):
             raise Exception('SmarAct SA_SetClosedLoopMoveSpeed_S failed')             
 
-        return speed.value                
+        return speed                
 
 
     def getStatus(self, channel_index,):
@@ -268,8 +267,7 @@ class SmarAct(object):
         )        
         if self.readStatus(status):
             raise Exception('SmarAct SA_GetStatus_S failed')            
-         
-        return status.value           
+        return status           
 
     def readStatus(self,status):
         if status==0: #SA_STOPPED_STATUS
@@ -292,8 +290,8 @@ class SmarAct(object):
             Exception('Error: Currently opening/closing jaws')    
         return status
 
-    def check_in_motion(self,):
-        if self.getStatus():
+    def check_in_motion(self,channel_index=0):
+        if self.getStatus(channel_index):
             return 1
         else:
             return 0
@@ -307,5 +305,30 @@ class SmarAct(object):
     def errorPosition(self,value):
         self._errorPosition = value
 
-    def move_to_pos(self,channel_index,pos,):
-        self.absolute_move(channel_index,pos)        
+    def move_to_pos(self,channel_index=0,pos=0,):
+        self.absolute_move(channel_index,int(pos))       
+
+    def check_no_error(self,):
+        self.check_in_motion()
+
+    def enable(self,):
+        # loc = get_controller_locators()
+        self.channels = get_controller_locators()
+        [self.init_communication(channel) for channel in self.channels]
+    def get_pos(self,channel_index=int(0)):
+        return self.getPosition(channel_index)
+
+    def stop_motion(self,channel_index=0):
+        self.stop(channel_index)
+
+def main():
+    import sys
+    import logging
+    logging.basicConfig(level=logging.INFO,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    
+    stage = SmarAct()
+    loc = get_controller_locators()
+    stage.init_communication(loc[0])
+    a = 1
+if __name__=="__main__":
+    main()
