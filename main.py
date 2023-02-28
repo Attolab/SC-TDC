@@ -145,11 +145,11 @@ class SC_TDC_viewer(QMainWindow,):
         self._dock_acq.setWidget(self._acq_panel)
         self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_acq) 
         # # Stage control panel used for acquisition parameters
-        # self._stageControl_panel = StageControl(self)
-        # self._dock_stage = QDockWidget('Stage control',self)
-        # self._dock_stage.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
-        # self._dock_stage.setWidget(self._stageControl_panel)
-        # self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_stage) 
+        self._stage_panel = StageControl(self)
+        self._dock_stage = QDockWidget('Stage control',self)
+        self._dock_stage.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
+        self._dock_stage.setWidget(self._stage_panel)
+        self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_stage) 
         # Tof panel used for display
         self._tof_panel = TimeOfFlightPanel(self)
         self._dock_tof = QDockWidget('Time of Flight',self)
@@ -161,7 +161,7 @@ class SC_TDC_viewer(QMainWindow,):
 
 
         # self._stageControl_panel.setMaximumWidth(500)
-        self._acq_panel.setMaximumWidth(500)
+        # self._acq_panel.setMaximumWidth(500)
         # self.showFullScreen()
         # self.setWindowFlags()
         # mainWindow->setWindowFlags(Qt::CustomizeWindowHint | Qt::FramelessWindowHint)
@@ -200,7 +200,7 @@ class SC_TDC_viewer(QMainWindow,):
         # self._acq_panel.start_acq_pushButton.clicked.connect(self.TDC.start_thread)
 
         self._acq_panel.signal_LaunchStageMotion.connect(self._stage_panel.run_movingstage)
-        self._stage_panel.signal_stagepositionupdated.connect(self._acq_panel.updatePosition)
+
     def closeDevice(self):
         self.closeDevice_signal.emit()
 

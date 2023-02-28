@@ -2,6 +2,7 @@
 # It is probably not the real python way to do it, but this is what Simon learned in his programming courses, so deal with it ;-) 
 class Stage:
     def __init__(self):
+        self.units = 'mm'
         return
 
     # Check if the stage currently gives an error code, return True if it doesn't, false if it does
@@ -18,7 +19,7 @@ class Stage:
 
     # Return the current position of the stage
     def get_pos(self):
-        pass
+        return 0
 
     # Moving or not moving?
     def get_motion_status(self):
@@ -31,6 +32,8 @@ class Stage:
     # Disable connection
     def disable(self):
         pass
+    def stop_motion(self,):
+        print('Stopping')
 
     def check_convergence(self, destination, threshold):
         if abs(self.get_pos() - destination) > threshold:
@@ -42,3 +45,12 @@ class Stage:
             return False
         else: 
             return True            
+
+    @property
+    def units(self):
+        """Exposure time in volts"""
+        return self._units
+    
+    @units.setter
+    def units(self,value):
+        self._units = value

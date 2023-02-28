@@ -6,6 +6,8 @@ def string2substring(string,regexp):
     return re.findall(regexp, string)
 
 def sortArray(array_input,ordering):
+    # 0: No sorting:    
+    series = array_input        
     # 1: Sort up
     if ordering == 1:
         series = np.sort(array_input)
@@ -28,9 +30,6 @@ def sortArray(array_input,ordering):
         # Reverse the first half to get staggered decending:
         firstHalf = firstHalf[::-1]
         series = np.concatenate((firstHalf, secondHalf))
-    else:
-        # 0: No sorting:
-        series = array_input        
     return series
 
 def parseStringInput(string="0:1:10",ordering=0):

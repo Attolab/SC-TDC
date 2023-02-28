@@ -37,6 +37,7 @@ import numpy as np
 import threading
 from threading import Thread
 from core.threading import BasicThread,RepeatThread
+from utils.parsedelays import parseStringInput
 from core.filesaver import FileSaver
 import logging
 import os
@@ -53,12 +54,13 @@ class AcquisitionPanel(QWidget,Ui_Form):
         super(AcquisitionPanel, self).__init__(parent)
 
         # Set up the user interface from Designer.
-        self.setupUi(self)  
+        self.ui = Ui_Form()
+        self.ui.setupUi(self)
         self._stageDelays = np.asarray([])
         self._convertDatathread = None
         self.connectSignals()
         self.initializeDate()
-        self.folderPath_lineEdit.setText(self.initializeDate())
+        self.ui.folderPath_lineEdit.setText(self.initializeDate())
 
         # Acquisition status
         self._in_acq = False
@@ -72,10 +74,33 @@ class AcquisitionPanel(QWidget,Ui_Form):
         self._elapsed_time_thread = QtCore.QTimer()
         self._elapsed_time = QtCore.QElapsedTimer()
         self._elapsed_time_thread.timeout.connect(self.updateTimer)
-        self._elapsed_time_thread.start(1000)        
+        self._elapsed_time_thread.start(1000)   
+
+
+        self.scanArray = np.asarray([])     
 
         # Repeating thread
         self._repeating_thread = None
+        self.setupPlotWindows()
+
+    def setupPlotWindows(self):
+            # Initialize the plot of the stage delays:
+        self.ui.plot_delays.setLabel('left','Postion')
+        self.ui.plot_delays.setLabel('bottom','Steps ')#   
+        self.ui.plot_delays.showGrid(x=True,y=True)
+        # self.ui,.plot_delays.enableAutoRange
+        # Initialize the done/undone plot that will show current progress:
+        self.delaysPlot = self.ui.plot_delays.plot(self.scanArray)        
+        self.delaysPlot_done = self.ui.plot_delays.plot(self.scanArray, fillLevel=0.0, brush=(50,50,200,200))
+    # Method to updagte the delays plot
+    def updateDelaysPlot(self,index=0):
+        stageDelay_indices = np.arange(0, np.size(self.scanArray))
+        # Plot with fill until the current index:
+        self.delaysPlot_done.setData(stageDelay_indices[:index], self.scanArray[:index])
+        # Plot without fill after the current delay index:
+        self.delaysPlot.setData(stageDelay_indices[index:], self.scanArray[index:])
+        self.ui.plot_delays.autoRange()
+        return
 
     @property
     def fileSaver(self):
@@ -92,22 +117,21 @@ class AcquisitionPanel(QWidget,Ui_Form):
         return current_directory
 
     def connectSignals(self):
-        self.start_acq_pushButton.clicked.connect(self.startAcqClicked)
-        self.end_acq_pushButton.clicked.connect(self.endAcqClicked)
-        self.openPath_pushButton.clicked.connect(self.openPath)
+        self.ui.start_acq_pushButton.clicked.connect(self.startAcqClicked)
+        self.ui.end_acq_pushButton.clicked.connect(self.endAcqClicked)
+        self.ui.update_pushButton.clicked.connect(self.parseDelayInput)        
+        self.ui.openPath_pushButton.clicked.connect(self.openPath)
         self.signal_UpdateIndexing.connect(self.updateIndexing)
-        
+        self.ui.delayScheme_comboBox.currentIndexChanged.connect(self.parseDelayInput)
+        self.ui.textEdit_delayInput.blockCountChanged.connect(self.parseDelayInput)
+
     def openPath(self):
         directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Open Directory",
                                              "/home",
                                              QtWidgets.QFileDialog.ShowDirsOnly
                                              | QtWidgets.QFileDialog.DontResolveSymlinks)
         if bool(directory):
-            self.folderPath_lineEdit.setText(directory)            
-    
-    
-    def updatePosition(self,pos):
-        self.status_position.setText(f'{pos}')
+            self.ui.folderPath_lineEdit.setText(directory)            
 
 
     @property
@@ -123,6 +147,7 @@ class AcquisitionPanel(QWidget,Ui_Form):
 
     def updateIndexing(self,event):
         position_array,index,steps = event
+        self.updateDelaysPlot(index[0])
         self.status_position.setText(self.makeFormatOuput(position_array[0], position_array[-1]))
         self.status_image.setText(self.makeFormatOuput(index[0],index[-1]))
         self.status_steps.setText(self.makeFormatOuput(steps[0],steps[-1]))
@@ -161,9 +186,10 @@ class AcquisitionPanel(QWidget,Ui_Form):
     def _collectAcquisitionSettings(self):
         # Position array
         # position_array = acq._stageDelays
-        position_array = np.zeros((5,))
+        self.parseDelayInput()
+        position_array = self.scanArray
         # Filename
-        filename = os.path.join(self.folderPath_lineEdit.text(),self.filePrefix_lineEdit.text())
+        filename = os.path.join(self.ui.folderPath_lineEdit.text(),self.ui.filePrefix_lineEdit.text())
         logger.info('Filename to store to: {}'.format(filename))
         # # Index
         index = 0
@@ -201,7 +227,7 @@ class AcquisitionPanel(QWidget,Ui_Form):
                     if self._in_acq:
                         #Open selected files except log
                         self._filesaver.openFiles(filename,index,tof=1,log=0)
-                        self.status_label.setText('Acquiring...')        
+                        self.ui.status_label.setText('Acquiring...')        
                         logger.info('Starting Acquisition')
                         start = time.time()
                         time_val = 10*acq_time
@@ -232,14 +258,28 @@ class AcquisitionPanel(QWidget,Ui_Form):
                 except Exception as e:
                     logger.error(str(e))
                     return
+    def parseDelayInput(self,):
+        delayInput = self.ui.textEdit_delayInput.toPlainText()
+        delayScheme_index = self.ui.delayScheme_comboBox.currentIndex()
+        parsed_arrays = parseStringInput(delayInput,delayScheme_index)
+        # if currentDelayIdx > 0:            
+            # parsed_arrays = self.ConvertTimeInDistance(parsed_arrays,self.ui.offset_spinBox.value(), self.relateDelayIdx_to_NumberofPass(currentDelayIdx))
+        # Save the delays as a field parameter   
+        self.scanArray = parsed_arrays.round(5)
+        # self._scanPositions = parsed_arrays.round(5)
+        # Send position array as a signal
+        # self.signal_stagepositionarray.emit(self._stagePositions)
+        # Update the delays plot
+        self.updateDelaysPlot()
+
     def startAcqClicked(self):
         self._stop_all_acquisitions = False
         filename,index,acq_time,position_array = self._collectAcquisitionSettings()
         if self._repeating_thread is not None:
             self._repeating_thread.cancel()
             self._repeating_thread = None
-        self.start_acq_pushButton.setEnabled(False)
-        self.end_acq_pushButton.setEnabled(True)            
+        self.ui.start_acq_pushButton.setEnabled(False)
+        self.ui.end_acq_pushButton.setEnabled(True)            
         self._repeating_thread = RepeatThread(1,self.run_acquisition,(acq_time,filename,index,position_array))
         self._repeating_thread.start()
         self._elapsed_time.restart()          
@@ -249,15 +289,15 @@ class AcquisitionPanel(QWidget,Ui_Form):
         self._stop_all_acquisitions = True
         self.endAcquisition()
         if self._repeating_thread is not None:
-            self.start_acq_pushButton.setEnabled(True)
-            self.end_acq_pushButton.setEnabled(False)            
+            self.ui.start_acq_pushButton.setEnabled(True)
+            self.ui.end_acq_pushButton.setEnabled(False)            
             self._repeating_thread.cancel()
             self._repeating_thread = None 
 
     def endAcquisition(self):
         self.closeFile.emit()    
         self._in_acq = False
-        self.status_label.setText('Live')
+        self.ui.status_label.setText('Live')
         self._elapsed_time.restart()
 
 

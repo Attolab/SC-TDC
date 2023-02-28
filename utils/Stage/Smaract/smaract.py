@@ -54,6 +54,7 @@ class SmarAct(object):
 
         self.controller_index = ''
         self.errorPosition = 10
+        self.units = 'nm'
 
     def init_communication(self, controller_locator):
         """

@@ -10,7 +10,9 @@ from PySide6 import QtWidgets,QtCore,QtGui
 # from .ui.settingsDialogUI import Ui_SettingsDialog
 from .ui.stageControl_ui import Ui_stageControl
 from utils.parsedelays import parseStringInput
-from utils.Stage.Smaract.smaract import SmarAct
+from utils.Stage.basestage import Stage
+from utils.makeConversionFactor import makeConversionFactor
+# from utils.Stage.Smaract.smaract import SmarAct
 # from ui.stageControl_ui import Ui_stageControl
 # from ui.settingsDialogUI import Ui_SettingsDialog
 # from .settingsDialog import SettingsDialog
@@ -54,6 +56,9 @@ class StageControl(QtWidgets.QWidget):
     signal_stagepositionfixed = QtCore.Signal(bool)
     #Send position array
     signal_stagepositionarray = QtCore.Signal(object)
+    #Update GUI
+    signal_updateGUI = QtCore.Signal(object)
+
 
     # Initialize the widget. It won't show up on screen after this.
     def __init__(self,parent):
@@ -65,32 +70,31 @@ class StageControl(QtWidgets.QWidget):
         # Call the setupUi method to add the right Ui elements.
         self.ui.setupUi(self)
         self._moving_stage_thread = None
-        self.connectSignals()
+        self.connectSignals()    
         # Initialize the abstract stage that does nothing:
-        # self._stage = Stage()
-        self._stage = SmarAct()
-        self._stage.enable()
-
-        # Array to contain the positions to run though
-        self._stagePositions = np.asarray([])
-        # The index of currently set stage delay
-        self.currentDelayIdx = 0
+        self._stage = Stage()
+        self.ui.offset_spinBox.setSuffix(self._stage.units)
+        # self._stage = SmarAct()
+        # self._stage.enable()
+        self.updateConversionFactor()        
+        self.tolerance = 10
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.blink)
-        self.setupPlotWindows()
 
-    def setupPlotWindows(self):
-            # Initialize the plot of the stage delays:
-        self.ui.plot_delays.setLabel('left','Postion')
-        self.ui.plot_delays.setLabel('bottom','Steps ')#   
-        self.ui.plot_delays.showGrid(x=True,y=True)
-        # Initialize the done/undone plot that will show current progress:
-        self.delaysPlot = self.ui.plot_delays.plot(self._stagePositions)        
-        self.delaysPlot_done = self.ui.plot_delays.plot(self._stagePositions, fillLevel=0.0, brush=(50,50,200,200))
 
     def initializeStage(self):
         if self._stage is None:
             print("Initializing chosen stage")
+            current_pos = self._stage.get_pos()
+            self.ui.targetAbsolute_spinBox.blockSignals(True)
+            self.ui.targetRelative_spinBox.blockSignals(True)
+            self.ui.offset_spinBox.blockSignals(True)
+            self.ui.targetAbsolute_spinBox.setValue(current_pos)
+            self.ui.targetRelative_spinBox.setValue(0)
+            self.ui.offset_spinBox.setValue(current_pos)   
+            self.ui.offset_spinBox.blockSignals(False)
+            self.ui.targetAbsolute_spinBox.blockSignals(False)
+            self.ui.targetRelative_spinBox.blockSignals(False)
         else:
             print("Deinitialize previously chosen stage first")
     def deinitializeStage(self):
@@ -101,27 +105,30 @@ class StageControl(QtWidgets.QWidget):
 
     #Launch function when buttons are pressed
     def connectSignals(self):
-        self.ui.move_pushButton.clicked.connect(self.moveStage_button)
-        self.ui.stop_pushButton.clicked.connect(self.stopStage_button)
-        # You can also pass paramaters from signals to slots. This will be evident later in the code.
-        # self.ui.pushButton_stageSettings.clicked.connect(self.openSettingsDialog)
-        # Connect the stageMode combobox to the stageMeode_changed() method.
-        self.ui.cBox_stageMode.currentIndexChanged.connect(self.stageMode_changed)
-        # Connect the delayInput button being clicked to the parseDelayInput method.
-        self.ui.update_pushButton.clicked.connect(self.parseDelayInput)        
-        # Connect the stage selection combobox to the 
         self.ui.cBox_stageSelection.currentIndexChanged.connect(self.stageSelection_changed)
-        self.ui.textEdit_delayInput.blockCountChanged.connect(self.parseDelayInput)
-        self.ui.delayScheme_comboBox.currentIndexChanged.connect(self.parseDelayInput)
-        self.ui.absoluteMotion_radioButton.toggled.connect(self.parseDelayInput)
+        self.ui.targetAbsolute_spinBox.valueChanged.connect(lambda x:self.run_movingstage(x,False))
+        self.ui.targetRelative_spinBox.valueChanged.connect(lambda x:self.run_movingstage(x,True))
+        self.ui.offset_spinBox.valueChanged.connect(self.updateRelativePosition)
+        self.ui.cBox_stageMode.currentIndexChanged.connect(self.updateConversionFactor)
+        self.ui.stop_pushButton.pressed.connect(self.stopStage_button)
+        self.signal_stagepositionupdated.connect(self.updatePosition)
+        self.signal_stagepositionfixed.connect(self.stage_in_motion)        
 
-
-
-
+    def updateRelativePosition(self,position):
+        a = 0
+        # old_position = self.ui.currentRelative_lineEdit.text()        
+        # if not old_position:
+        #     old_position = 0
+        # else:
+        #     old_position = float(old_position)
+        # relative_position = position-old_position           
+        # self.ui.targetRelative_spinBox.blockSignals(True)
+        # self.ui.targetRelative_spinBox.setValue(relative_position)
+        # self.ui.targetRelative_spinBox.blockSignals(False)
+        # self.ui.currentRelative_lineEdit.setText(str(relative_position))
     @QtCore.Slot()
     def stageSelection_changed(self):
         if self.ui.cBox_stageSelection.currentIndex() == 0:
-
             self._stage = self._NewportStage
         elif self.ui.cBox_stageSelection.currentIndex() == 1:
             self._stage = self._thorlabsStage
@@ -136,175 +143,93 @@ class StageControl(QtWidgets.QWidget):
     @QtCore.Slot()
     def stage_in_motion(self):
         if self._in_motion:
-            self.ui.stage_position_status.setText(f'MOVING')  
+            self.ui.stop_pushButton.setText(f'MOVING (press to stop)')
+            self.ui.stop_pushButton.setEnabled(True)
             self.timer.start(500)
         else:
             self.timer.stop()
-            self.ui.stage_position_status.setText(f'FIXED')     
+            self.ui.stop_pushButton.setText(f'FIXED')
+            self.ui.stop_pushButton.setEnabled(False)
     def blink(self):
-        print('Blinking')
-    @QtCore.Slot()
-    def stageMode_changed(self):
-        # The options in the combobox is for now hard coded. This is not the best practice, but is pretty easy
-        # to implement
-        currentIndex = self.ui.cBox_stageMode.currentIndex()
-        # if currentIndex == 0:
-        #     self.ui.label_delayInput.setText("Delay Input [mm]")
-        # elif currentIndex == 1 or currentIndex == 2:
-        #     self.ui.label_delayInput.setText("Delay Input [ps]")
-        # elif currentIndex == 3 or currentIndex == 4:
-        #     self.ui.label_delayInput.setText("Delay Input [fs]")
-        self.updateDelaysPlot()
-        self.parseDelayInput()
-
-    # This will take a signal from the daq config that gives 3 arrays as parameters, this is the reason for the wierd
-    # signature:
-    @QtCore.Slot(object, object, object)
-    def update_currentDelayIndex(self, positions, indexes, steps):
-        if(steps[0] != self.currentDelayIdx):
-            self.currentDelayIdx = steps[0]
-            self.updateDelaysPlot()
-        return
-
-    # Method to updagte the delays plot
-    def updateDelaysPlot(self):
-        stageDelay_indices = np.arange(0, np.size(self._stagePositions))
-        # Plot with fill until the current index:
-        self.delaysPlot_done.setData(stageDelay_indices[:self.currentDelayIdx], self._stagePositions[:self.currentDelayIdx])
-        # Plot without fill after the current delay index:
-        self.delaysPlot.setData(stageDelay_indices[self.currentDelayIdx:], self._stagePositions[self.currentDelayIdx:])
-        return
-
-
+        print('Blinking')            
     # def openSettingsDialog(self):
     #     dialog = SettingsDialog()
     #     dialog.signal_applyStageSerialPort.connect(self.set_stageCOMPort)
     #     return
 
+    def updatePosition(self,position):
+        self.ui.currentAbsolute_lineEdit.setText(str(position))
+        position/=self.getConversionFactor()
+        position = np.round(position,5)
+        relative_position = position-self.ui.offset_spinBox.value()
+        relative_position /= self.getConversionFactor()
+        relative_position = np.round(relative_position,5)
+        self.ui.currentRelative_lineEdit.setText(str(relative_position))
 
-    # This slot takes a parameter! Specifically here declared to be a string.
-    # A signal that is emitted to it must then contain a string as a parameter.
+    def updateConversionFactor(self,):     
+        # In
+        if self.ui.cBox_stageMode.currentIndex():
+            self.ui.conversionFactor_lineEdit.setEnabled(False)
+            self.ui.conversionFactor_lineEdit.setText(str(self.getConversionFactor()))
+        else:
+            self.ui.conversionFactor_lineEdit.setEnabled(True)      
 
-    # Parses the delay input to an numpy array that contains all the stage delay values.
-    # The syntax goes like this, expanding a little bit on what is used in the "frame_ultimate.vi" program:
-    # A range: "start:step:stop" gives an array that goes from start to stop in steps of step.
-    # A series: "range_a, range_b" (or "x:y:z, a:b:c") gives two ranges that are concatenated together to one array.
-    #           Any number of ranges sperated by commas and/or whitespace (including return) is a series.
-    #           Everything is a series will be sorted together, if sorting is used.
-    # All_delays: "series_a;series_b" is multiple series seperated by a semicolon.
-    #           Different series are NOT sorted together.
-    # Note that this method is too long for good coding practice and should probably be put into it's own class.
-    def parseDelayInput(self,):
-        delayInput = self.ui.textEdit_delayInput.toPlainText()
-        delayScheme_index = self.ui.delayScheme_comboBox.currentIndex()
-        parsed_arrays = parseStringInput(delayInput,delayScheme_index)
-        currentDelayIdx = self.ui.cBox_stageMode.currentIndex()
-        if currentDelayIdx > 0:            
-            parsed_arrays = self.ConvertTimeInDistance(parsed_arrays,self.ui.offset_spinBox.value(), self.relateDelayIdx_to_NumberofPass(currentDelayIdx))
-        # Save the delays as a field parameter        
-        self._stagePositions = parsed_arrays.round(5)
-        # Send position array as a signal
-        self.signal_stagepositionarray.emit(self._stagePositions)
-        # Update the delays plot
-        self.updateDelaysPlot()
-    # def convertDelay(self,):
-    #     return delay
+    def getConversionFactor(self,):
+        # Return conversion factor from GUI units to stage units
+        return float(makeConversionFactor(self.getCurrentUnits(),self._stage.units))
 
+    def getCurrentUnits(self):
+        # Get current units from GUI
+        units = re.findall('(?<=\[)[^][]*(?=])',self.ui.cBox_stageMode.currentText())
+        if units:
+            units = units[0]
+        else:
+            units = self._stage.units
+        return units
 
-    def relateDelayIdx_to_NumberofPass(self,index):
-        numberofpass = 1
-        if index == 1:
-            numberofpass = 1
-        elif index == 2:
-            numberofpass = 2
-        elif index == 3:
-            numberofpass = 1
-        elif index == 4: 
-            numberofpass = 2
-        return numberofpass
-
-    def relateDelayIndex_to_speedOfLight(self,index):
-        c__in_mm_per_timeUnit = 1
-        # index 0 is "mm"
-        
-        # index 1 and 2 are ps
-        if index == 1 or index == 2:
-            c_in_mm_per_timeUnit = 0.299792458/1.00026905462751
-        # Index 3 and 4 are fs:
-        elif index == 3 or index == 4:
-            c_in_mm_per_timeUnit = 0.299792458/1.00026905462751 * 1e-3
-        return
-
-    #Function that reacts to the move button   
-    def moveStage_button(self):   
-        self.parseDelayInput()        
-        try:
-            self.run_movingstage(self._stagePositions[0])
-        except Exception as e:
-            print('Cannot read array, check input')
-            return
-    #Function that reacts to the stop button            
-    def stopStage_button(self):  
-        self.end_movingstage()
-        print('Reached killing of thread')
-        self._stage.stop_motion()
-        # try:
-            # self.ui.status_position.setText(f'{self._stage.get_pos()}')  
-        # except Exception as e:
-        #     logging.error(str(e))
-        #     return
-        if self._moving_stage_thread is not None:
-            self._moving_stage_thread.cancel()
-            self._moving_stage_thread = None         
+   
     #Function that take care of the motion of the stage
-    def moveStage(self,destination,numberoftry = 0):
+    def moveStage(self,destination,):
         #Checking motor status
         if not self._stage.check_no_error:
             self._stage.enable()
-
         #Initial postion
         initialpos = self._stage.get_pos()   
         lastpos = initialpos 
         self.signal_stagepositionupdated.emit(lastpos)
-
         #Moving command            
         self._stage.move_to_pos(pos=destination)        
         #Checking stage motion and updating current position
-        while abs(destination-lastpos)>self._stage.errorPosition and self._in_motion:
+        while abs(destination-lastpos)>self.tolerance and self._in_motion:
             try:
                 time.sleep(0.1)
                 lastpos = self._stage.get_pos()   
                 print(lastpos)
                 self.signal_stagepositionupdated.emit(lastpos)
-                # self.status_position.setText(f'{lastpos}')
+                self.updatePosition(lastpos)
                 print(round(100 * (lastpos-initialpos)/(destination-initialpos)))
-                # self.motion_progressBar.setValue(round(100 * (lastpos-initialpos)/destination))
             except Exception as e:
                 logging.error(str(e))
                 return                
         #Checking final position
-        # if abs(lastpos - destination) > 0.01:            
-            # print(f'Crashed at {lastpos}mm\nNumber of try is {numberoftry}')
-            # if numberoftry < 5:
-                # self._stage.enable()
-                # self.moveStage(destination,numberoftry + 1)                
-            # else:
-                # print('Stage failed to reached destination')
         else: 
             print('Finished')
-            self.end_movingstage()
+        self.end_movingstage()
  
-     #Function to convert time input in distance as a function of the number of pass
-    def ConvertTimeInDistance(self,time_delays,t0_in_mm,numberofpass):
-        #speedoflight_in_mmperps = 0.299792458/1.00026905462751; # value for 800 nm in our lab %1.000348;
-        # Time unit is either ps or fs. This relates the index of the stageMode cBox to the right value:
-        c_in_mm_per_timeUnit = self.relateDelayIndex_to_speedOfLight(self.ui.cBox_stageMode.currentIndex())
-
-        return (time_delays*c_in_mm_per_timeUnit/(2*numberofpass))+t0_in_mm
+    #Function that reacts to the stop button            
+    def stopStage_button(self):  
+        self.end_movingstage()
+        self._stage.stop_motion()
+        # if self._moving_stage_thread is not None:
+        #     self._moving_stage_thread.cancel()
+        #     self._moving_stage_thread = None   
 
      #Command that launch the move stage thread
-    @QtCore.Slot(float)     
-    def run_movingstage(self,destination):
+    @QtCore.Slot(float)         
+    def run_movingstage(self,destination,isRelative):
+        destination*=self.getConversionFactor()
+        if isRelative:
+            destination += self.ui.offset_spinBox.value()
         if self._moving_stage_thread is not None:
                 self._moving_stage_thread.cancel()
                 self._moving_stage_thread = None
@@ -314,10 +239,13 @@ class StageControl(QtWidgets.QWidget):
         self._moving_stage_thread.start()
 
     #Command that kills the move stage thread
-    def end_movingstage(self):        
-        self._moving_stage_thread.cancel()
-        self._in_motion = False
-        self.signal_stagepositionfixed.emit(False)       
+    def end_movingstage(self): 
+        if self._moving_stage_thread is not None:
+            self._moving_stage_thread.cancel()
+            self._in_motion = False
+            self._moving_stage_thread = None
+            self.signal_stagepositionfixed.emit(False)       
+
 
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:    
