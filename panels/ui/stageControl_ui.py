@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'stageControl.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.2.4
+## Created by: Qt User Interface Compiler version 6.4.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -23,7 +23,7 @@ class Ui_stageControl(object):
     def setupUi(self, stageControl):
         if not stageControl.objectName():
             stageControl.setObjectName(u"stageControl")
-        stageControl.resize(725, 236)
+        stageControl.resize(597, 225)
         sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -53,6 +53,14 @@ class Ui_stageControl(object):
         self.pushButton_stageSettings.setSizePolicy(sizePolicy1)
 
         self.verticalLayout.addWidget(self.pushButton_stageSettings)
+
+        self.activeStab_pushButton = QPushButton(self.groupBox)
+        self.activeStab_pushButton.setObjectName(u"activeStab_pushButton")
+        sizePolicy1.setHeightForWidth(self.activeStab_pushButton.sizePolicy().hasHeightForWidth())
+        self.activeStab_pushButton.setSizePolicy(sizePolicy1)
+        self.activeStab_pushButton.setCheckable(True)
+
+        self.verticalLayout.addWidget(self.activeStab_pushButton)
 
         self.verticalSpacer = QSpacerItem(120, 50, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding)
 
@@ -274,6 +282,7 @@ class Ui_stageControl(object):
         self.cBox_stageSelection.setItemText(1, QCoreApplication.translate("stageControl", u"ThorLabs - Rotation", None))
 
         self.pushButton_stageSettings.setText(QCoreApplication.translate("stageControl", u"Stage Settings", None))
+        self.activeStab_pushButton.setText(QCoreApplication.translate("stageControl", u"Active Stabilization", None))
         self.groupBox_2.setTitle(QCoreApplication.translate("stageControl", u"Stage position", None))
         self.stop_pushButton.setText(QCoreApplication.translate("stageControl", u"FIXED", None))
         self.offset_spinBox.setSuffix("")

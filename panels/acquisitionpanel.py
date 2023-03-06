@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 class AcquisitionPanel(QWidget,Ui_Form):
     closeFile = Signal()
     signal_UpdateIndexing = Signal(object)
-    signal_LaunchStageMotion = Signal(float)
+    signal_goToPosition = Signal(float)
     def __init__(self,parent=None):
         super(AcquisitionPanel, self).__init__(parent)
 
@@ -57,6 +57,7 @@ class AcquisitionPanel(QWidget,Ui_Form):
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self._stageDelays = np.asarray([])
+        self.stageReady = False
         self._convertDatathread = None
         self.connectSignals()
         self.initializeDate()
@@ -75,7 +76,7 @@ class AcquisitionPanel(QWidget,Ui_Form):
         self._elapsed_time = QtCore.QElapsedTimer()
         self._elapsed_time_thread.timeout.connect(self.updateTimer)
         self._elapsed_time_thread.start(1000)   
-
+        self.ui.splitter.setSizes([1,3])
 
         self.scanArray = np.asarray([])     
 
@@ -148,10 +149,10 @@ class AcquisitionPanel(QWidget,Ui_Form):
     def updateIndexing(self,event):
         position_array,index,steps = event
         self.updateDelaysPlot(index[0])
-        self.status_position.setText(self.makeFormatOuput(position_array[0], position_array[-1]))
-        self.status_image.setText(self.makeFormatOuput(index[0],index[-1]))
-        self.status_steps.setText(self.makeFormatOuput(steps[0],steps[-1]))
-        acq_time = float(self.acquisitionTime_lineEdit.text())        
+        self.ui.status_position.setText(self.makeFormatOuput(position_array[0], position_array[-1]))
+        self.ui.status_image.setText(self.makeFormatOuput(index[0],index[-1]))
+        self.ui.status_steps.setText(self.makeFormatOuput(steps[0],steps[-1]))
+        acq_time = float(self.ui.acquisitionTime_lineEdit.text())        
         # Estimate the length of the scan:
         stageVelocity = 1.0 # mm/s
         totalStageMotion = np.sum(np.abs(np.diff(self._stageDelays)))
@@ -176,9 +177,9 @@ class AcquisitionPanel(QWidget,Ui_Form):
         if self._in_acq:
             seconds = self._elapsed_time.elapsed()/1000
             h,m,s = self.makeHoursMinutesSeconds(seconds)
-            self.elapsed_time_s.display(int(round(s)))
-            self.elapsed_time_m.display(int(round(m)))
-            self.elapsed_time_h.display(h)
+            self.ui.elapsed_time_s.display(int(round(s)))
+            self.ui.elapsed_time_m.display(int(round(m)))
+            self.ui.elapsed_time_h.display(h)
     def makeHoursMinutesSeconds(self,seconds):
             m, s = divmod(seconds, 60)
             h, m = divmod(m, 60)
@@ -199,7 +200,7 @@ class AcquisitionPanel(QWidget,Ui_Form):
         # Updated index value
         # logger.info('Start index is {}'.format(index))
         # acq.startindex.setValue(index)        
-        acq_time = float(self.acquisitionTime_lineEdit.text())
+        acq_time = float(self.ui.acquisitionTime_lineEdit.text())
         logger.info('Acq time is {} s'.format(acq_time))
         # logger.info(f'Number of steps is {len(position_array)}')
         # logger.info('Will repeat this {} times'.format(repeats))        
@@ -215,13 +216,13 @@ class AcquisitionPanel(QWidget,Ui_Form):
                 self._in_acq = True
                 currentstep += 1
                 # Move the stage
-                self.signal_LaunchStageMotion.emit(pos)
+                self.signal_goToPosition.emit(pos)
                 # Initialize the variable such that the following while wait for the variable to change before pursuing
-                self._stage_ismoving = True
+                self.stageReady = False
                 # Update current position / index and step number
                 self.signal_UpdateIndexing.emit(([pos, position_array[-1]], [index , final_index],[currentstep , numberofsteps]))
                 # Wait for the stage to reach its final position
-                while self._stage_ismoving:
+                while not self.stageReady:
                             time.sleep(0.1)                            
                 try:
                     if self._in_acq:
@@ -258,6 +259,20 @@ class AcquisitionPanel(QWidget,Ui_Form):
                 except Exception as e:
                     logger.error(str(e))
                     return
+
+
+    def isStageReady(self,ready):
+        self.stageReady = ready
+
+    @property
+    def stageReady(self):
+        return self._stageReady
+    
+    @stageReady.setter
+    def stageReady(self,value):
+        self._stageReady = value
+
+
     def parseDelayInput(self,):
         delayInput = self.ui.textEdit_delayInput.toPlainText()
         delayScheme_index = self.ui.delayScheme_comboBox.currentIndex()

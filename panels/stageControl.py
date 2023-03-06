@@ -20,6 +20,7 @@ import logging
 import threading
 from threading import Thread
 import time
+from panels.activeStabilisation import PIDModule
 # from .core.threading import BasicThread
 class BasicThread(Thread):
     """Call a function after a specified number of seconds:
@@ -54,6 +55,7 @@ class StageControl(QtWidgets.QWidget):
     signal_stagepositionupdated = QtCore.Signal(float)
     #Send true if stage is moving
     signal_stagepositionfixed = QtCore.Signal(bool)
+    signal_stagePositionReady = QtCore.Signal(bool)
     #Send position array
     signal_stagepositionarray = QtCore.Signal(object)
     #Update GUI
@@ -73,6 +75,7 @@ class StageControl(QtWidgets.QWidget):
         self.connectSignals()    
         # Initialize the abstract stage that does nothing:
         self._stage = Stage()
+        self._pid = None
         self.ui.offset_spinBox.setSuffix(self._stage.units)
         # self._stage = SmarAct()
         # self._stage.enable()
@@ -80,6 +83,9 @@ class StageControl(QtWidgets.QWidget):
         self.tolerance = 10
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.blink)
+
+
+        # Tof panel used for display
 
 
     def initializeStage(self):
@@ -112,7 +118,60 @@ class StageControl(QtWidgets.QWidget):
         self.ui.cBox_stageMode.currentIndexChanged.connect(self.updateConversionFactor)
         self.ui.stop_pushButton.pressed.connect(self.stopStage_button)
         self.signal_stagepositionupdated.connect(self.updatePosition)
-        self.signal_stagepositionfixed.connect(self.stage_in_motion)        
+        self.signal_stagepositionfixed.connect(self.stage_in_motion)      
+        self.ui.activeStab_pushButton.pressed.connect(self.launchActiveStab)
+
+    def launchActiveStab(self,):            
+        if self.ui.activeStab_pushButton.isChecked():            
+            self._pid.hide()
+        else:
+            if self._pid is None:
+                self._pid = PIDModule()
+                self.connectPIDsignals()
+            self._pid.show()
+            self._pid.start()
+
+    def connectPIDsignals(self,):
+        self._pid.ui.stabilize_pushButton.pressed.connect(self.switchMode)
+        self._pid.ouputPID_signal.connect(self.setPosition)
+
+    def switchMode(self,):
+        if self._pid.ui.stabilize_pushButton.isChecked():
+            self.ui.targetAbsolute_spinBox.setEnabled(True)
+            self.ui.targetRelative_spinBox.setEnabled(True)
+            # self.run_stageContinuously()
+
+        else:
+            self.ui.targetAbsolute_spinBox.setEnabled(False)
+            self.ui.targetRelative_spinBox.setEnabled(False)
+
+
+
+    # def run_stageContinuously(self,):
+    #     if self._moving_stage_thread is not None:
+    #             self._moving_stage_thread.cancel()
+    #             self._moving_stage_thread = None
+    #     self._in_motion = True        
+    #     self.signal_stagepositionfixed.emit(True)    
+    #     self._moving_stage_thread = BasicThread(self.moveStageContinuuously,)           
+    #     self._moving_stage_thread.start()
+
+    # def moveStageContinuuously(self,):
+    #     while self._pid.ui.stabilize_pushButton.isChecked():
+    #         self._stage.move_to_pos(pos=self.destination)      
+    #         print(self.destination)  
+    #     self.end_movingstage()
+    
+    def setPosition(self,position):
+        # self.destination = position
+        if self._pid.ui.stabilize_pushButton.isChecked():
+            self._stage.move_to_pos(pos = position)  
+            
+            self.signal_stagePositionReady.emit(True)
+            print(position)
+
+
+
 
     def updateRelativePosition(self,position):
         a = 0
@@ -187,12 +246,15 @@ class StageControl(QtWidgets.QWidget):
             units = self._stage.units
         return units
 
-   
+    def receivePositionCommand(self,destination):
+        if self._pid.ui.stabilize_pushButton.isChecked():
+            self._pid.ui.objective_PID_spinBox.setValue(destination)
+        else:
+            self.run_movingstage(destination)
+
+
     #Function that take care of the motion of the stage
     def moveStage(self,destination,):
-        #Checking motor status
-        if not self._stage.check_no_error:
-            self._stage.enable()
         #Initial postion
         initialpos = self._stage.get_pos()   
         lastpos = initialpos 
@@ -220,13 +282,11 @@ class StageControl(QtWidgets.QWidget):
     def stopStage_button(self):  
         self.end_movingstage()
         self._stage.stop_motion()
-        # if self._moving_stage_thread is not None:
-        #     self._moving_stage_thread.cancel()
-        #     self._moving_stage_thread = None   
+
 
      #Command that launch the move stage thread
     @QtCore.Slot(float)         
-    def run_movingstage(self,destination,isRelative):
+    def run_movingstage(self,destination,isRelative=False):
         destination*=self.getConversionFactor()
         if isRelative:
             destination += self.ui.offset_spinBox.value()
@@ -234,7 +294,7 @@ class StageControl(QtWidgets.QWidget):
                 self._moving_stage_thread.cancel()
                 self._moving_stage_thread = None
         self._in_motion = True        
-        self.signal_stagepositionfixed.emit(True)    
+        self.signal_stagepositionfixed.emit(False)    
         self._moving_stage_thread = BasicThread(self.moveStage,(destination,))           
         self._moving_stage_thread.start()
 
@@ -244,13 +304,14 @@ class StageControl(QtWidgets.QWidget):
             self._moving_stage_thread.cancel()
             self._in_motion = False
             self._moving_stage_thread = None
-            self.signal_stagepositionfixed.emit(False)       
+            self.signal_stagepositionfixed.emit(True)       
 
 
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:    
         self._stage.end_movingstage()
         self._stage.close_communication()
+        self._pid.close()
         return super().closeEvent(event)
 
 def main():

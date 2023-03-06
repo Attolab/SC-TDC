@@ -59,7 +59,7 @@ import timeit
 from dataBuffer import BufDataCB5
 from DataToFile import DataToTextfile
 from ast import Param
-from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,QFileInfo,QSettings,
     QMetaObject, QObject, QPoint, QRect,
     QSize, QTime, QUrl, Qt,Signal,QProcess)
 from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
@@ -93,7 +93,24 @@ QUEUE_ENDOFMEAS = 1
 #         return data
 #     elif eventtype == QUEUE_ENDOFMEAS:
 #         return 0
+# def restore(settings):
+#     finfo = QFileInfo(settings.fileName())
+#     if finfo.exists() and finfo.isFile():
+#         for w in QApplication.allWidgets():
+#             mo = w.metaObject()
+#             if w.objectName() != "":
+#                 for i in range(mo.propertyCount()):
+#                     name = mo.property(i).name()
+#                     val = settings.value("{}/{}".format(w.objectName(), name), w.property(name))
+#                     w.setProperty(name, val)
 
+# def save(settings):
+#     for w in QApplication.allWidgets():
+#         mo = w.metaObject()
+#         if w.objectName() != "":
+#             for i in range(mo.propertyCount()):
+#                 name = mo.property(i).name()
+#                 settings.setValue("{}/{}".format(w.objectName(), name), w.property(name))
 class SC_TDC_viewer(QMainWindow,):
     clearNow = Signal()
     displayNow = Signal()
@@ -102,6 +119,7 @@ class SC_TDC_viewer(QMainWindow,):
     onTof = Signal(object)
     resetTof = Signal()
     closeDevice_signal = Signal()
+    settings = QSettings("gui.ini", QSettings.IniFormat)
 
     def __init__(self,parent=None,):
         super(SC_TDC_viewer, self).__init__(parent)
@@ -113,6 +131,14 @@ class SC_TDC_viewer(QMainWindow,):
         self._last_update = 0
         self._last_frame = 0.0
         self._frame_time = -1.0
+        self.readSettings()
+
+
+    def readSettings(self,):        
+        self.restoreGeometry(self.settings.value("geometry"));
+        self.restoreState(self.settings.value("windowState"));
+        # restore(self.settings)
+
         # self.geometry()
         # a = self.geometry().getRect()
         # self.resize(self.size().height(),self.size().width())
@@ -124,46 +150,54 @@ class SC_TDC_viewer(QMainWindow,):
         filename="tdc_gpx3.ini",exposureTime=100)
         self.TDC.dataCallback = self.onData
 
+
+    for w in QApplication.allWidgets():
+        try:
+             if w.objectName() == 'Viewer configuration':
+                print(1)
+        except:
+            pass
         
     def setupWindows(self):
         # TDC configuration
         self._TDC_config_panel = TDCConfig(self)
-        self._dock_TDC_config = QDockWidget('TDC configuration',self)
+        self._dock_TDC_config = QDockWidget('TDC configuration',parent=self,objectName='dock_tdcConfig')
+        # self._dock_TDC_config.setObjectName('TDC_Config')
         self._dock_TDC_config.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
         self._dock_TDC_config.setWidget(self._TDC_config_panel)
         self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_TDC_config)         
         # Viewer configuration
         self._viewer_config_panel = ViewerConfig(self)
-        self._dock_viewer_config = QDockWidget('Viewer configuration',self)
+        self._dock_viewer_config = QDockWidget('Viewer configuration',parent=self,objectName='dock_viewerConfig')
         self._dock_viewer_config.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
         self._dock_viewer_config.setWidget(self._viewer_config_panel)
         self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_viewer_config)         
         # Acquisition panel used for acquisition parameters
         self._acq_panel = AcquisitionPanel(self)
-        self._dock_acq = QDockWidget('Acquisition',self)
+        self._dock_acq = QDockWidget('Acquisition',parent=self,objectName='dock_acquisitionConfig')
         self._dock_acq.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
         self._dock_acq.setWidget(self._acq_panel)
         self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_acq) 
         # # Stage control panel used for acquisition parameters
         self._stage_panel = StageControl(self)
-        self._dock_stage = QDockWidget('Stage control',self)
+        self._dock_stage = QDockWidget('Stage control',parent=self,objectName='dock_stageControl')
         self._dock_stage.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
         self._dock_stage.setWidget(self._stage_panel)
         self.addDockWidget(Qt.LeftDockWidgetArea,self._dock_stage) 
         # Tof panel used for display
         self._tof_panel = TimeOfFlightPanel(self)
-        self._dock_tof = QDockWidget('Time of Flight',self)
+        self._dock_tof = QDockWidget('Time of Flight',parent=self,objectName='dock_ToFViewer')
         self._dock_tof.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
         self._dock_tof.setWidget(self._tof_panel)
         self.addDockWidget(Qt.RightDockWidgetArea,self._dock_tof)    
         self.tabifyDockWidget(self._dock_acq,self._dock_viewer_config)
         self.tabifyDockWidget(self._dock_viewer_config,self._dock_TDC_config)
 
-
         # self._stageControl_panel.setMaximumWidth(500)
         # self._acq_panel.setMaximumWidth(500)
         # self.showFullScreen()
         # self.setWindowFlags()
+        self.setTabPosition(Qt.LeftDockWidgetArea,QTabWidget.TabPosition.North)
         # mainWindow->setWindowFlags(Qt::CustomizeWindowHint | Qt::FramelessWindowHint)
         # self.setTabPosition()
         self._tof_panel.showMaximized()
@@ -196,10 +230,13 @@ class SC_TDC_viewer(QMainWindow,):
 
         # self._acq_panel.start_acq_pushButton.clicked.connect(self._stageControl_panel.parseDelayInput)
 
+        self._stage_panel.signal_stagepositionfixed.connect(self._acq_panel.isStageReady)        
+
         # self._acq_panel.end_acq_pushButton.clicked.connect(self.TDC.stop_thread)
         # self._acq_panel.start_acq_pushButton.clicked.connect(self.TDC.start_thread)
 
-        self._acq_panel.signal_LaunchStageMotion.connect(self._stage_panel.run_movingstage)
+        self._acq_panel.signal_goToPosition.connect(self._stage_panel.receivePositionCommand)
+
 
     def closeDevice(self):
         self.closeDevice_signal.emit()
@@ -241,7 +278,16 @@ class SC_TDC_viewer(QMainWindow,):
             self.displayNow.emit()
             self._last_update = time.time()      
 
-
+    def closeEvent(self, event):
+        
+        # settings=QSettings("MyCompany", "MyApp");
+        self.settings.setValue("geometry", self.saveGeometry());
+        self.settings.setValue("windowState", self.saveState());
+        QMainWindow.closeEvent(self,event);        
+        # save(self.settings)
+        # QWidget.closeEvent(self, event)
+    # def exitGUI(self):
+        # self.close()
             # time.sleep(1.0)
             # print(timeit.default_timer())            
     # # enter a scope where the text file is open
