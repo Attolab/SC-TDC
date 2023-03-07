@@ -56,7 +56,7 @@ class TimeOfFlightPanel(QWidget,Ui_Form):
         self.yield_view.addItem(self._yield_data)
         self.yield_view.setLabel('bottom',text='Measurement')
         self.yield_view.setLabel('left',text='Hits')
-
+        self.updateGUI()
         self._tof_start = 0.0
         self._tof_end = 1000.0
         self._tof_bin = 500
@@ -75,6 +75,14 @@ class TimeOfFlightPanel(QWidget,Ui_Form):
         self.event_end.returnPressed.connect(self.onUpdateTofConfig)
         self.bin_size.returnPressed.connect(self.onUpdateTofConfig)
         self.max_queue.returnPressed.connect(self.onUpdateTofConfig)
+        self.settings_checkBox.stateChanged.connect(self.updateGUI)
+
+
+    def updateGUI(self,):
+        if self.settings_checkBox.isChecked():
+            self.settings_groupBox.show()
+        else:
+            self.settings_groupBox.hide()
 
     def clearTof(self):
         # Reset both Tof and Blobs

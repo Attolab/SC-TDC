@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'activeStabilisation.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.4.0
+## Created by: Qt User Interface Compiler version 6.2.4
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -25,7 +25,7 @@ class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName(u"Form")
-        Form.resize(410, 581)
+        Form.resize(560, 581)
         self.verticalLayout_2 = QVBoxLayout(Form)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.splitter = QSplitter(Form)
@@ -182,15 +182,26 @@ class Ui_Form(object):
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.horizontalLayout_7 = QHBoxLayout()
         self.horizontalLayout_7.setObjectName(u"horizontalLayout_7")
-        self.stabilize_pushButton = QPushButton(self.groupBox_3)
-        self.stabilize_pushButton.setObjectName(u"stabilize_pushButton")
+        self.saveROI_pushButton = QPushButton(self.groupBox_3)
+        self.saveROI_pushButton.setObjectName(u"saveROI_pushButton")
         sizePolicy4 = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy4.setHorizontalStretch(0)
         sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(self.saveROI_pushButton.sizePolicy().hasHeightForWidth())
+        self.saveROI_pushButton.setSizePolicy(sizePolicy4)
+        self.saveROI_pushButton.setLayoutDirection(Qt.LeftToRight)
+        self.saveROI_pushButton.setCheckable(True)
+        self.saveROI_pushButton.setChecked(False)
+
+        self.horizontalLayout_7.addWidget(self.saveROI_pushButton)
+
+        self.stabilize_pushButton = QPushButton(self.groupBox_3)
+        self.stabilize_pushButton.setObjectName(u"stabilize_pushButton")
         sizePolicy4.setHeightForWidth(self.stabilize_pushButton.sizePolicy().hasHeightForWidth())
         self.stabilize_pushButton.setSizePolicy(sizePolicy4)
         self.stabilize_pushButton.setLayoutDirection(Qt.LeftToRight)
         self.stabilize_pushButton.setCheckable(True)
+        self.stabilize_pushButton.setChecked(False)
 
         self.horizontalLayout_7.addWidget(self.stabilize_pushButton)
 
@@ -276,6 +287,7 @@ class Ui_Form(object):
         self.label_t0_5.setText(QCoreApplication.translate("Form", u"D", None))
         self.D_PID_spinBox.setSuffix("")
         self.groupBox_3.setTitle(QCoreApplication.translate("Form", u"Status", None))
+        self.saveROI_pushButton.setText(QCoreApplication.translate("Form", u"Save settings", None))
         self.stabilize_pushButton.setText(QCoreApplication.translate("Form", u"Stabilize", None))
         self.label_2.setText(QCoreApplication.translate("Form", u"Measured", None))
         self.phaseMeasured_lineEdit.setText("")

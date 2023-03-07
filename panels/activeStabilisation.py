@@ -47,6 +47,7 @@ logger = logging.getLogger(__name__)
 class PIDModule(QWidget,Ui_Form):
     frameTimeChange = Signal(float)
     ouputPID_signal = Signal(float)
+    
 
     def __init__(self,parent=None):
         super(PIDModule, self).__init__(parent)
@@ -61,7 +62,7 @@ class PIDModule(QWidget,Ui_Form):
         self.pid = PID()
         self.updatePID()
         self.connectSignals()
-
+        self.loadSettings()
 
     def connectSignals(self,):
         self._fourierSel.sigPositionChangeFinished.connect(self.refreshQueue)
@@ -120,19 +121,45 @@ class PIDModule(QWidget,Ui_Form):
     def convert_rad_to_nm(self,input):
         return 2.11146/(2*np.pi)*299.792458/2*input
 
-    def start(self,):
+    def start(self,timeout=100):
         print('Go')
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.updateData)
-        self.timer.start(100)        
+        self.timer.start(timeout)        
     # def hideEvent(self,a):
     #     print('hidden')
     # def showEvent(self,a):
     #     print('Shown')
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+        settings = QtCore.QSettings("activeStab.ini", QtCore.QSettings.IniFormat)
+        roi_imageView = self.ui.camera_imageView.roi.saveState()
+        pos_fourierPeak = self._fourierSel.getPos()
+        threshold_fourierPeak = self._fourierLim.getPos()    
+        P = self.ui.P_PID_spinBox.value()
+        I = self.ui.I_PID_spinBox.value()
+        D = self.ui.D_PID_spinBox.value()
+        settings.setValue('_fourierSel',pos_fourierPeak)
+        settings.setValue('_fourierLim',threshold_fourierPeak)
+        settings.setValue('ui/camera_imageView/roi',roi_imageView)
+        settings.setValue('ui/P_PID_spinBox/value',self.ui.P_PID_spinBox.value())
+        settings.setValue('ui/I_PID_spinBox/value',self.ui.I_PID_spinBox.value())
+        settings.setValue('ui/D_PID_spinBox/value',self.ui.D_PID_spinBox.value())
+
         self.timer.stop()
         return super().closeEvent(event)
+
+    def loadSettings(self,):   
+        import os
+        if os.path.exists("activeStab.ini"):        
+            settings = QtCore.QSettings("activeStab.ini", QtCore.QSettings.IniFormat)
+            self._fourierLim.setPos([float(p) for p in settings.value('_fourierLim')])
+            self._fourierSel.setPos([float(p) for p in settings.value('_fourierLim')])
+            self.ui.P_PID_spinBox.setValue(float(settings.value('ui/I_PID_spinBox/value')))
+            self.ui.I_PID_spinBox.setValue(float(settings.value('ui/I_PID_spinBox/value')))
+            self.ui.D_PID_spinBox.setValue(float(settings.value('ui/I_PID_spinBox/value')))
+            self.ui.camera_imageView.roi.setState(settings.value('ui/camera_imageView/roi'))
+
     def setupWindows(self,):
         self.ui.camera_imageView.ui.roiBtn.setChecked(True) #Activate ROI
         cameraSize = [256,256]
