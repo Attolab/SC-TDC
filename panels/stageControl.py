@@ -247,8 +247,9 @@ class StageControl(QtWidgets.QWidget):
         return units
 
     def receivePositionCommand(self,destination):
-        if self._pid.ui.stabilize_pushButton.isChecked():
-            self._pid.ui.objective_PID_spinBox.setValue(destination)
+        if self._pid is not None: 
+            if self._pid.ui.stabilize_pushButton.isChecked():
+                self._pid.ui.objective_PID_spinBox.setValue(destination)
         else:
             self.run_movingstage(destination)
 

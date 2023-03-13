@@ -17,7 +17,7 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QCheckBox, QGroupBox, QHBoxLayout,
     QLabel, QLineEdit, QPushButton, QSizePolicy,
-    QVBoxLayout, QWidget)
+    QSplitter, QVBoxLayout, QWidget)
 
 from pyqtgraph import PlotWidget
 
@@ -25,42 +25,39 @@ class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName(u"Form")
-        Form.resize(772, 508)
+        Form.resize(832, 572)
         sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(Form.sizePolicy().hasHeightForWidth())
         Form.setSizePolicy(sizePolicy)
-        self.verticalLayout_5 = QVBoxLayout(Form)
-        self.verticalLayout_5.setObjectName(u"verticalLayout_5")
-        self.groupBox_3 = QGroupBox(Form)
-        self.groupBox_3.setObjectName(u"groupBox_3")
-        sizePolicy.setHeightForWidth(self.groupBox_3.sizePolicy().hasHeightForWidth())
-        self.groupBox_3.setSizePolicy(sizePolicy)
-        self.verticalLayout = QVBoxLayout(self.groupBox_3)
+        self.verticalLayout = QVBoxLayout(Form)
         self.verticalLayout.setObjectName(u"verticalLayout")
-        self.tof_view = PlotWidget(self.groupBox_3)
+        self.splitter = QSplitter(Form)
+        self.splitter.setObjectName(u"splitter")
+        self.splitter.setOrientation(Qt.Vertical)
+        self.tof_view = PlotWidget(self.splitter)
         self.tof_view.setObjectName(u"tof_view")
         sizePolicy.setHeightForWidth(self.tof_view.sizePolicy().hasHeightForWidth())
         self.tof_view.setSizePolicy(sizePolicy)
-
-        self.verticalLayout.addWidget(self.tof_view)
-
-        self.yield_view = PlotWidget(self.groupBox_3)
+        self.splitter.addWidget(self.tof_view)
+        self.yield_view = PlotWidget(self.splitter)
         self.yield_view.setObjectName(u"yield_view")
         sizePolicy.setHeightForWidth(self.yield_view.sizePolicy().hasHeightForWidth())
         self.yield_view.setSizePolicy(sizePolicy)
+        self.splitter.addWidget(self.yield_view)
 
-        self.verticalLayout.addWidget(self.yield_view)
+        self.verticalLayout.addWidget(self.splitter)
 
-        self.settings_checkBox = QCheckBox(self.groupBox_3)
+        self.settings_checkBox = QCheckBox(Form)
         self.settings_checkBox.setObjectName(u"settings_checkBox")
+        self.settings_checkBox.setChecked(False)
 
         self.verticalLayout.addWidget(self.settings_checkBox)
 
         self.verticalLayout_4 = QVBoxLayout()
         self.verticalLayout_4.setObjectName(u"verticalLayout_4")
-        self.settings_groupBox = QGroupBox(self.groupBox_3)
+        self.settings_groupBox = QGroupBox(Form)
         self.settings_groupBox.setObjectName(u"settings_groupBox")
         self.verticalLayout_3 = QVBoxLayout(self.settings_groupBox)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
@@ -144,13 +141,10 @@ class Ui_Form(object):
 
         self.verticalLayout.addLayout(self.verticalLayout_4)
 
-        self.update_config = QPushButton(self.groupBox_3)
+        self.update_config = QPushButton(Form)
         self.update_config.setObjectName(u"update_config")
 
         self.verticalLayout.addWidget(self.update_config)
-
-
-        self.verticalLayout_5.addWidget(self.groupBox_3)
 
 
         self.retranslateUi(Form)
@@ -160,7 +154,6 @@ class Ui_Form(object):
 
     def retranslateUi(self, Form):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"Form", None))
-        self.groupBox_3.setTitle(QCoreApplication.translate("Form", u"Time of Flight", None))
         self.settings_checkBox.setText(QCoreApplication.translate("Form", u"Settings", None))
         self.settings_groupBox.setTitle(QCoreApplication.translate("Form", u"Time of Flight Config", None))
         self.label.setText(QCoreApplication.translate("Form", u"Event Window:", None))

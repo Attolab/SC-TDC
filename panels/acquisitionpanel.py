@@ -161,7 +161,7 @@ class AcquisitionPanel(QWidget,Ui_Form):
         scanLengthRemaining = acq_time*(steps[-1] - steps[0]+1) + remainingStageMotion * 1.0/stageVelocity
         h_remaining,m_remaining,s_remaining = self.makeHoursMinutesSeconds(scanLengthRemaining)
         h_total,m_total,s_total = self.makeHoursMinutesSeconds(scanLengthEstimate)
-        self.status_scanLength.setText(f"{h_remaining}h {m_remaining} m {s_remaining} s / {h_total}h {m_total} m {s_total} s")
+        self.ui.status_scanLength.setText(f"{h_remaining}h {m_remaining} m {s_remaining} s / {h_total}h {m_total} m {s_total} s")
 
     #Output for GUI
     def makeFormatOuput(self,input1,input2):
@@ -304,17 +304,21 @@ class AcquisitionPanel(QWidget,Ui_Form):
         self._stop_all_acquisitions = True
         self.endAcquisition()
         if self._repeating_thread is not None:
-            self.ui.start_acq_pushButton.setEnabled(True)
-            self.ui.end_acq_pushButton.setEnabled(False)            
+         
             self._repeating_thread.cancel()
             self._repeating_thread = None 
 
     def endAcquisition(self):
         self.closeFile.emit()    
         self._in_acq = False
+        self.ui.start_acq_pushButton.setEnabled(True)
+        self.ui.end_acq_pushButton.setEnabled(False)   
         self.ui.status_label.setText('Live')
         self._elapsed_time.restart()
 
+    def updateButton(self,):
+        self.ui.start_acq_pushButton.setEnabled(not self._in_acq)
+        self.ui.end_acq_pushButton.setEnabled(self._in_acq)   
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         self._elapsed_time_thread.stop()
