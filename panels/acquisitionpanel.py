@@ -50,6 +50,7 @@ class AcquisitionPanel(QWidget,Ui_Form):
     closeFile = Signal()
     signal_UpdateIndexing = Signal(object)
     signal_goToPosition = Signal(float)
+    isScanFinished = Signal(bool)
     def __init__(self,parent=None):
         super(AcquisitionPanel, self).__init__(parent)
 
@@ -125,6 +126,7 @@ class AcquisitionPanel(QWidget,Ui_Form):
         self.signal_UpdateIndexing.connect(self.updateIndexing)
         self.ui.delayScheme_comboBox.currentIndexChanged.connect(self.parseDelayInput)
         self.ui.textEdit_delayInput.blockCountChanged.connect(self.parseDelayInput)
+        self.isScanFinished.connect(self.updateAcqButton)
 
     def openPath(self):
         directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Open Directory",
@@ -148,7 +150,7 @@ class AcquisitionPanel(QWidget,Ui_Form):
 
     def updateIndexing(self,event):
         position_array,index,steps = event
-        self.updateDelaysPlot(index[0])
+        self.updateDelaysPlot(steps[0])
         self.ui.status_position.setText(self.makeFormatOuput(position_array[0], position_array[-1]))
         self.ui.status_image.setText(self.makeFormatOuput(index[0],index[-1]))
         self.ui.status_steps.setText(self.makeFormatOuput(steps[0],steps[-1]))
@@ -259,7 +261,7 @@ class AcquisitionPanel(QWidget,Ui_Form):
                 except Exception as e:
                     logger.error(str(e))
                     return
-
+        self.isScanFinished.emit(True)
 
     def isStageReady(self,ready):
         self.stageReady = ready
@@ -293,8 +295,7 @@ class AcquisitionPanel(QWidget,Ui_Form):
         if self._repeating_thread is not None:
             self._repeating_thread.cancel()
             self._repeating_thread = None
-        self.ui.start_acq_pushButton.setEnabled(False)
-        self.ui.end_acq_pushButton.setEnabled(True)            
+        self.isScanFinished.emit(False)       
         self._repeating_thread = RepeatThread(1,self.run_acquisition,(acq_time,filename,index,position_array))
         self._repeating_thread.start()
         self._elapsed_time.restart()          
@@ -303,22 +304,19 @@ class AcquisitionPanel(QWidget,Ui_Form):
         # self.acqtab.end_movingstage()
         self._stop_all_acquisitions = True
         self.endAcquisition()
-        if self._repeating_thread is not None:
-         
+        if self._repeating_thread is not None:         
             self._repeating_thread.cancel()
             self._repeating_thread = None 
 
     def endAcquisition(self):
         self.closeFile.emit()    
         self._in_acq = False
-        self.ui.start_acq_pushButton.setEnabled(True)
-        self.ui.end_acq_pushButton.setEnabled(False)   
         self.ui.status_label.setText('Live')
         self._elapsed_time.restart()
 
-    def updateButton(self,):
-        self.ui.start_acq_pushButton.setEnabled(not self._in_acq)
-        self.ui.end_acq_pushButton.setEnabled(self._in_acq)   
+    def updateAcqButton(self,isFinished):
+        self.ui.start_acq_pushButton.setEnabled(isFinished)
+        self.ui.end_acq_pushButton.setEnabled(not isFinished)   
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         self._elapsed_time_thread.stop()
